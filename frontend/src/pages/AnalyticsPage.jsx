@@ -2,16 +2,17 @@ import React from 'react';
 import ClicksChart from '../components/Analytics/ClicksChart';
 import ConversionTable from '../components/Analytics/ConversionTable';
 import EarningsTracker from '../components/Analytics/EarningsTracker';
-import { FiBarChart2, FiRefreshCw } from 'react-icons/fi';
+import { FiRefreshCw } from 'react-icons/fi';
 import api from '../services/api';
 
 export default function AnalyticsPage() {
-  const [data, setData] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
+  const [, setData] = React.useState(null);
+  const [, setLoading] = React.useState(true);
   const [timeRange, setTimeRange] = React.useState(30);
 
   React.useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange]);
 
   async function fetchData() {

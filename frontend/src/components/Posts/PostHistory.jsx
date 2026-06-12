@@ -1,5 +1,4 @@
 import React from 'react';
-import { FiCheckCircle, FiXCircle, FiClock } from 'react-icons/fi';
 
 export default function PostHistory() {
   const [history, setHistory] = React.useState([]);

@@ -1,16 +1,7 @@
 import React from 'react';
-import { FiClock, FiSend, FiCheckCircle, FiXCircle, FiPlay } from 'react-icons/fi';
+import { FiClock, FiCheckCircle, FiXCircle, FiPlay } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
-
-const PLATFORM_COLORS = {
-  telegram: '#2AABEE',
-  instagram: '#E4405F',
-  facebook: '#1877F2',
-  pinterest: '#BD081C',
-  twitter: '#1DA1F2',
-  threads: '#101010',
-};
 
 export default function PostQueue() {
   const [queue, setQueue] = React.useState([]);

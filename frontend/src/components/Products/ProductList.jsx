@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiSearch, FiFilter, FiRefreshCw } from 'react-icons/fi';
+import { FiSearch, FiRefreshCw } from 'react-icons/fi';
 import ProductCard from './ProductCard';
 import Loader from '../Shared/Loader';
 import toast from 'react-hot-toast';
@@ -13,6 +13,7 @@ export default function ProductList({ currentPage = 'all' }) {
 
   React.useEffect(() => {
     fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function fetchProducts() {

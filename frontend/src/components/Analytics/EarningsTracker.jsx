@@ -1,5 +1,4 @@
 import React from 'react';
-import { FiDollarSign } from 'react-icons/fi';
 
 export default function EarningsTracker({ data = [] }) {
   if (data.length === 0) {

@@ -1,5 +1,4 @@
 import React from 'react';
-import { FiRefreshCw } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -14,7 +13,7 @@ const PLATFORM_INFO = {
 
 export default function PlatformStatus() {
   const [platforms, setPlatforms] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
+  const [, setLoading] = React.useState(true);
   const [testing, setTesting] = React.useState(null);
 
   React.useEffect(() => {

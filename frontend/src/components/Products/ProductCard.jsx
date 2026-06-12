@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiExternalLink, FiStar, FiMessageCircle, FiBarChart2 } from 'react-icons/fi';
+import { FiExternalLink, FiStar, FiMessageCircle } from 'react-icons/fi';
 import './ProductCard.css';
 
 export default function ProductCard({ product, onGenerate }) {

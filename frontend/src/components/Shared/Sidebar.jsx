@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { FiHome, FiGrid, FiSend, FiBarChart2, FiSettings, FiExternalLink } from 'react-icons/fi';
+import { FiHome, FiGrid, FiSend, FiBarChart2, FiSettings } from 'react-icons/fi';
 
 const NAV_ITEMS = [
   { path: '/', icon: FiHome, label: 'Overview' },

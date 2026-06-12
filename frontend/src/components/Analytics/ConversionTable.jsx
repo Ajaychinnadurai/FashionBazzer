@@ -1,5 +1,4 @@
 import React from 'react';
-import { FiTrendingUp, FiTrendingDown } from 'react-icons/fi';
 
 export default function ConversionTable({ data = [] }) {
   if (data.length === 0) {

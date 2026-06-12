@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiSave, FiClock, FiCalendar, FiDollarSign } from 'react-icons/fi';
+import { FiSave, FiClock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 export default function Settings() {

@@ -8,7 +8,7 @@ import api from '../../services/api';
 export default function Dashboard() {
   const [stats, setStats] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
+  const [, setError] = React.useState(null);
   const [revenueData, setRevenueData] = React.useState([]);
 
   React.useEffect(() => {
