@@ -59,26 +59,28 @@ export default function Dashboard() {
     } catch (err) {
       console.error('Dashboard fetch error:', err);
       setError('Failed to load dashboard data');
-      // Use demo data for development
-      setStats({
-        clicks: { value: '12,456', change: 23, subtitle: '342 today' },
-        earnings: { value: '₹4,320', change: 15, subtitle: '₹842 today' },
-        posts: { value: '48', change: 8, subtitle: '19 scheduled today' },
-        conversions: { value: '37', change: -3, subtitle: '5 today' },
-      });
-      setRevenueData([
-        { name: 'Telegram', earnings: 2400 },
-        { name: 'Instagram', earnings: 1800 },
-        { name: 'Facebook', earnings: 800 },
-        { name: 'Pinterest', earnings: 3200 },
-        { name: 'Twitter', earnings: 1200 },
-      ]);
     } finally {
       setLoading(false);
     }
   }
 
   if (loading) return <Loader text="Loading dashboard..." />;
+
+  // If stats is null after loading, API call failed
+  if (!stats) {
+    return (
+      <div style={{ padding: '24px' }}>
+        <div className="empty-state">
+          <div className="emoji">📡</div>
+          <h3>Could not load dashboard data</h3>
+          <p>The server may still be starting up. The scheduler will begin scraping products at 3:00 AM IST.</p>
+          <button className="btn btn-primary" onClick={fetchDashboardData} style={{ marginTop: 12 }}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const statCards = [
     { title: 'Total Clicks', ...stats.clicks, icon: <FiMousePointer size={22} />, color: '#FF3CAC' },

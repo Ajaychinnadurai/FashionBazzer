@@ -6,7 +6,7 @@ import { FiRefreshCw } from 'react-icons/fi';
 import api from '../services/api';
 
 export default function AnalyticsPage() {
-  const [, setData] = React.useState(null);
+  const [data, setData] = React.useState(null);
   const [, setLoading] = React.useState(true);
   const [timeRange, setTimeRange] = React.useState(30);
 
@@ -81,10 +81,10 @@ export default function AnalyticsPage() {
         flexWrap: 'wrap',
       }}>
         {[
-          { label: 'Total Clicks', value: '24,891', color: '#FF3CAC' },
-          { label: 'Conversion Rate', value: '2.8%', color: '#00D4AA' },
-          { label: 'Avg. Commission', value: '₹48', color: '#2B86C5' },
-          { label: 'Active Links', value: '342', color: '#FFB800' },
+          { label: 'Total Clicks', value: data?.stats?.total_clicks?.toLocaleString() || '0', color: '#FF3CAC' },
+          { label: 'Conversion Rate', value: data?.stats?.conversion_rate ? `${data.stats.conversion_rate}%` : '0%', color: '#00D4AA' },
+          { label: 'Total Revenue', value: data?.stats?.total_earnings ? `₹${data.stats.total_earnings}` : '₹0', color: '#2B86C5' },
+          { label: 'Top Products', value: data?.stats?.total_products?.toString() || '0', color: '#FFB800' },
         ].map((stat, i) => (
           <div key={i} className="glass-card" style={{
             padding: '16px 20px',

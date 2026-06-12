@@ -26,8 +26,7 @@ export default function ProductList({ currentPage = 'all' }) {
       setProducts(res.data.results || res.data || []);
     } catch (err) {
       console.error('Products fetch error:', err);
-      // Demo data
-      setProducts(getDemoProducts());
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -137,49 +136,3 @@ export default function ProductList({ currentPage = 'all' }) {
   );
 }
 
-function getDemoProducts() {
-  return [
-    {
-      id: 1, name: 'Trendy Co-ord Set - Latest Collection', platform: 'meesho',
-      original_price: 1299, sale_price: 399, discount_percent: 69,
-      rating: 4.7, review_count: 5800, category: 'co-ord',
-      affiliate_url: '#', image_url: '',
-      ai_tagline: '💖 This co-ord set is giving main character energy! 🔥',
-    },
-    {
-      id: 2, name: 'Women Casual Bodycon Mini Dress', platform: 'amazon',
-      original_price: 1999, sale_price: 449, discount_percent: 78,
-      rating: 4.5, review_count: 3200, category: 'bodycon',
-      affiliate_url: '#', image_url: '',
-      ai_tagline: '✨ Your new fav dress is here and it is only ₹449! 💫',
-    },
-    {
-      id: 3, name: 'Designer Indo-Western Fusion Dress', platform: 'flipkart',
-      original_price: 1899, sale_price: 699, discount_percent: 63,
-      rating: 4.8, review_count: 2100, category: 'indo-western',
-      affiliate_url: '#', image_url: '',
-      ai_tagline: '💃 Slay every moment in this stunning fusion dress! 🔥',
-    },
-    {
-      id: 4, name: 'Printed Maxi Dress - Summer Special', platform: 'meesho',
-      original_price: 999, sale_price: 299, discount_percent: 70,
-      rating: 4.3, review_count: 12000, category: 'cottagecore',
-      affiliate_url: '#', image_url: '',
-      ai_tagline: '🌸 Obsessed is an understatement! Get this look for ₹299 ✨',
-    },
-    {
-      id: 5, name: 'Party Wear Cut-out Dress - Trending Now', platform: 'amazon',
-      original_price: 2499, sale_price: 699, discount_percent: 72,
-      rating: 4.6, review_count: 890, category: 'cut-out',
-      affiliate_url: '#', image_url: '',
-      ai_tagline: '⭐ 4.6/5 stars — and we totally get why! Grab yours at ₹699 💕',
-    },
-    {
-      id: 6, name: 'Elegant Y2K Revival Mini Dress', platform: 'flipkart',
-      original_price: 1599, sale_price: 549, discount_percent: 66,
-      rating: 4.4, review_count: 4500, category: 'y2k',
-      affiliate_url: '#', image_url: '',
-      ai_tagline: '🎯 This is THE dress everyone is talking about! ₹549 only! 💥',
-    },
-  ];
-}

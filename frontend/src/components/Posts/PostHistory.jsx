@@ -1,11 +1,21 @@
 import React from 'react';
+import api from '../../services/api';
 
 export default function PostHistory() {
   const [history, setHistory] = React.useState([]);
 
   React.useEffect(() => {
-    setHistory(getDemoHistory());
+    fetchHistory();
   }, []);
+
+  async function fetchHistory() {
+    try {
+      const res = await api.get('/dashboard/overview/');
+      setHistory(res.data.recent_posts || []);
+    } catch {
+      setHistory([]);
+    }
+  }
 
   return (
     <div>
@@ -13,29 +23,33 @@ export default function PostHistory() {
         <div className="empty-state">
           <div className="emoji">📜</div>
           <h3>No post history yet</h3>
-          <p>Published posts will appear here.</p>
+          <p>Published posts will appear here once the scheduler starts posting.</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {history.map((item, i) => (
-            <div key={i} className="glass-card" style={{
+            <div key={item.id || i} className="glass-card" style={{
               padding: '12px 16px',
               display: 'flex',
               alignItems: 'center',
               gap: 12,
             }}>
               <span style={{ fontSize: '1.2rem' }}>
-                {item.status === 'success' ? '✅' : item.status === 'failed' ? '❌' : '⏳'}
+                {item.status === 'published' ? '✅' : item.status === 'failed' ? '❌' : '⏳'}
               </span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '0.85rem', fontWeight: 500 }}>
-                  {item.platform} → {item.product_name || 'Product'}
+                  {item.product_name || 'Product'}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  {new Date(item.posted_at).toLocaleString('en-IN')}
+                  {item.published_at
+                    ? new Date(item.published_at).toLocaleString('en-IN')
+                    : item.scheduled_time
+                      ? `Scheduled: ${new Date(item.scheduled_time).toLocaleString('en-IN')}`
+                      : ''}
                 </div>
               </div>
-              <span className={`tag ${item.status === 'success' ? 'tag-success' : item.status === 'failed' ? 'tag-error' : 'tag-warning'}`}>
+              <span className={`tag ${item.status === 'published' ? 'tag-success' : item.status === 'failed' ? 'tag-error' : 'tag-warning'}`}>
                 {item.status}
               </span>
             </div>
@@ -44,14 +58,4 @@ export default function PostHistory() {
       )}
     </div>
   );
-}
-
-function getDemoHistory() {
-  const now = Date.now();
-  return [
-    { platform: 'Telegram', product_name: 'Co-ord Set', status: 'success', posted_at: now - 3600000 },
-    { platform: 'Instagram', product_name: 'Bodycon Dress', status: 'success', posted_at: now - 7200000 },
-    { platform: 'Facebook', product_name: 'Maxi Dress', status: 'failed', posted_at: now - 14400000 },
-    { platform: 'Pinterest', product_name: 'Cut-out Dress', status: 'success', posted_at: now - 21600000 },
-  ];
 }

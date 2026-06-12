@@ -5,8 +5,8 @@ services:
     runtime: python
     region: singapore
     rootDir: backend
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
-    startCommand: gunicorn fashionbazzer.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: python manage.py migrate && gunicorn fashionbazzer.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 120
     envVars:
       - key: SECRET_KEY
         generateValue: true
@@ -22,6 +22,8 @@ services:
           property: connectionString
       - key: DJANGO_SETTINGS_MODULE
         value: fashionbazzer.settings
+      - key: PYTHON_VERSION
+        value: 3.12.2
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_CHANNEL_ID
@@ -58,6 +60,27 @@ services:
         sync: false
       - key: REDIRECT_BASE_URL
         value: https://fashionbazzer-backend.onrender.com/r/
+    plan: free
+
+  # ─── React Frontend ──────────────────────────────
+  - type: static
+    name: fashionbazzer-frontend
+    runtime: node
+    region: singapore
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./build
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://fashionbazzer-backend.onrender.com/api
+      - key: REACT_APP_REDIRECT_BASE
+        value: https://fashionbazzer-backend.onrender.com/r
+      - key: NODE_VERSION
+        value: 20
     plan: free
 
 databases:

@@ -10,6 +10,47 @@ from apps.products.models import Product
 from apps.poster.models import PostQueue
 
 
+class SeedDataView(APIView):
+    """
+    GET /api/dashboard/seed/
+    Triggers the full data pipeline to populate the database with initial data.
+    Calls product scraping + AI content generation.
+    """
+
+    def get(self, request):
+        import logging
+        logger = logging.getLogger(__name__)
+        results = {'products': 0, 'content': 0, 'errors': []}
+
+        # Step 1: Scrape products
+        try:
+            from apps.poster.scheduler import scrape_trending_products
+            scrape_result = scrape_trending_products()
+            results['products'] = scrape_result.get('new_products', 0) or scrape_result.get('products_scraped', 0)
+            logger.info(f"Seed: scraped {results['products']} products")
+        except Exception as e:
+            results['errors'].append(f'Scraping failed: {str(e)}')
+            logger.error(f"Seed scraping failed: {e}")
+
+        # Step 2: Generate AI content
+        try:
+            from apps.poster.scheduler import generate_content
+            content_result = generate_content()
+            results['content'] = content_result.get('generated', 0) + content_result.get('recycled', 0)
+            logger.info(f"Seed: generated {results['content']} content items")
+        except Exception as e:
+            results['errors'].append(f'Content generation failed: {str(e)}')
+            logger.error(f"Seed content generation failed: {e}")
+
+        # Step 3: Get current counts
+        from apps.products.models import Product
+        from apps.poster.models import PostQueue
+        results['total_products'] = Product.objects.count()
+        results['total_queue'] = PostQueue.objects.count()
+
+        return Response(results)
+
+
 class DashboardView(APIView):
     """
     GET /api/dashboard/

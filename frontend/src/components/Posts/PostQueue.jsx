@@ -16,7 +16,7 @@ export default function PostQueue() {
       const res = await api.get('/queue/');
       setQueue(res.data.results || res.data || []);
     } catch {
-      setQueue(getDemoQueue());
+      setQueue([]);
     } finally {
       setLoading(false);
     }
@@ -126,12 +126,3 @@ export default function PostQueue() {
   );
 }
 
-function getDemoQueue() {
-  return [
-    { id: 1, product: 1, product_name: 'Trendy Co-ord Set', status: 'pending', scheduled_time: new Date(Date.now() + 3600000).toISOString() },
-    { id: 2, product: 2, product_name: 'Bodycon Mini Dress', status: 'pending', scheduled_time: new Date(Date.now() + 7200000).toISOString() },
-    { id: 3, product: 3, product_name: 'Indo-Western Fusion Dress', status: 'published', scheduled_time: new Date(Date.now() - 3600000).toISOString() },
-    { id: 4, product: 4, product_name: 'Printed Maxi Dress', status: 'pending', scheduled_time: new Date(Date.now() + 14400000).toISOString() },
-    { id: 5, product: 5, product_name: 'Party Cut-out Dress', status: 'failed', scheduled_time: new Date(Date.now() - 7200000).toISOString() },
-  ];
-}
