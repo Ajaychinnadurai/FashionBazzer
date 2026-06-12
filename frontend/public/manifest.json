@@ -1,0 +1,9 @@
+{
+  "short_name": "FashionBazzer",
+  "name": "FashionBazzer - Affiliate Marketing Dashboard",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0D0D0D",
+  "background_color": "#0D0D0D"
+}
