@@ -41,10 +41,24 @@ class PosterConfig(AppConfig):
         # For gunicorn/uwsgi/worker/runapscheduler: RUN_MAIN is not set,
         # but we skip the runserver guard above and start the scheduler directly.
 
+        # Only start scheduler on the main process (not gunicorn workers)
+        import os
+        if os.environ.get('WEB_CONCURRENCY'):
+            # We're running under gunicorn - only the main process should start the scheduler
+            if os.environ.get('RUN_MAIN', None) is None:
+                # This is a child worker process - skip scheduler startup
+                return
+        
         from .scheduler import start_scheduler
-        try:
-            start_scheduler()
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to start scheduler: {e}")
+        import threading
+        def _start():
+            try:
+                start_scheduler()
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to start scheduler: {e}")
+        
+        # Start scheduler in a background thread to avoid blocking gunicorn
+        thread = threading.Thread(target=_start, daemon=True)
+        thread.start()
