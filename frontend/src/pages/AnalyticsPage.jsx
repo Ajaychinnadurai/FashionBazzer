@@ -112,12 +112,15 @@ export default function AnalyticsPage() {
         gap: 20,
         padding: '0 24px',
       }}>
-        <ClicksChart />
-        <EarningsTracker />
+        <ClicksChart data={data?.clicks?.by_platform?.map(c => ({
+          name: c.platform,
+          value: c.clicks
+        })) || []} />
+        <EarningsTracker data={data?.earnings || []} />
       </div>
 
       <div style={{ padding: '20px 24px 0' }}>
-        <ConversionTable />
+        <ConversionTable data={data?.clicks?.top_products || []} />
       </div>
     </div>
   );

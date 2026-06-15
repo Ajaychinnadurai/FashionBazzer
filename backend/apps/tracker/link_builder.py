@@ -1,32 +1,38 @@
 """
 Affiliate link builder for FashionBazzer.
 Creates short, trackable links with UTM parameters for each platform.
+Injects your affiliate IDs (tags) directly into the final URL.
 """
 import hashlib
 import logging
 from typing import Optional
-from urllib.parse import urlencode, urlparse, parse_qs
+from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 # Base URL for redirects (points to this Django backend)
-REDIRECT_BASE_URL = settings.REDIRECT_BASE_URL if hasattr(settings, 'REDIRECT_BASE_URL') else "https://fashionbazzer-backend.onrender.com/r/"
+REDIRECT_BASE_URL = getattr(settings, 'REDIRECT_BASE_URL', 'https://fashionbazzer-backend.onrender.com/r/')
+
+
+def _ensure_trailing_slash(url: str) -> str:
+    """Ensure the base URL ends with a slash."""
+    return url.rstrip('/') + '/'
 
 
 class LinkBuilder:
     """
     Builds trackable affiliate links with:
-    - Short codes for click tracking
+    - Short codes for click tracking via this Django backend
     - UTM parameters for each social platform
-    - Affiliate IDs for each platform
+    - Your affiliate IDs injected into the final redirect URL
     """
 
+    # Affiliate ID parameters to inject by platform
     AFFILIATE_PARAMS = {
-        'meesho': {'aff_id': settings.MEESHO_AFFILIATE_ID},
-        'amazon': {'tag': settings.AMAZON_ASSOCIATE_ID},
-        'flipkart': {'affid': 'fashionbazzer'},
-        'cuelinks': {'id': settings.CUELINKS_ID},
+        'meesho': {'aff_id': settings.MEESHO_AFFILIATE_ID if hasattr(settings, 'MEESHO_AFFILIATE_ID') else ''},
+        'amazon': {'tag': settings.AMAZON_ASSOCIATE_ID if hasattr(settings, 'AMAZON_ASSOCIATE_ID') else ''},
+        'flipkart': {'affid': settings.FLIPKART_AFFILIATE_ID if hasattr(settings, 'FLIPKART_AFFILIATE_ID') else 'fashionbazzer'},
     }
 
     PLATFORM_UTM = {
@@ -38,25 +44,74 @@ class LinkBuilder:
         'threads': {'utm_source': 'threads', 'utm_medium': 'social', 'utm_campaign': 'fashionbazzer'},
     }
 
+    def __init__(self):
+        # Resolve affiliate IDs from settings at init time
+        self.amazon_tag = getattr(settings, 'AMAZON_ASSOCIATE_ID', '')
+        self.meesho_id = getattr(settings, 'MEESHO_AFFILIATE_ID', '')
+        self.flipkart_id = getattr(settings, 'FLIPKART_AFFILIATE_ID', 'fashionbazzer')
+
     def build(self, affiliate_url: str, product_id: int, platform: str) -> str:
         """
-        Build a tracked affiliate link.
+        Build a tracked affiliate link with your tag injected.
+
+        The link goes through this backend first (/r/<short_code>)
+        which records the click, then redirects to the final affiliate URL
+        WITH your tag/ID embedded.
 
         Args:
-            affiliate_url: Original affiliate URL
+            affiliate_url: Original product or affiliate URL from the scraper
             product_id: Product ID in the database
-            platform: Target social platform
+            platform: Target social platform (telegram, instagram, etc.)
 
         Returns:
-            Short tracked URL (e.g., https://fashionbazzer-backend.onrender.com/r/abc123)
+            Short tracked URL (e.g., https://yourdomain.com/r/abc123)
         """
-        # Create short code
-        short_code = self._generate_short_code(affiliate_url, product_id, platform)
+        # Step 1: Inject your affiliate ID into the URL
+        final_url = self._inject_affiliate_id(affiliate_url)
 
-        # Save to database
-        self._save_tracked_link(short_code, affiliate_url, product_id, platform)
+        # Step 2: Add UTM parameters for the platform
+        final_url = self.add_utm(final_url, platform)
 
-        return f"{REDIRECT_BASE_URL}{short_code}"
+        # Step 3: Create short code pointing to the enriched URL
+        short_code = self._generate_short_code(final_url, product_id, platform)
+
+        # Step 4: Save to database
+        self._save_tracked_link(short_code, final_url, product_id, platform)
+
+        base = _ensure_trailing_slash(REDIRECT_BASE_URL)
+        return f"{base}{short_code}"
+
+    def _inject_affiliate_id(self, url: str) -> str:
+        """
+        Inject your affiliate ID/tag into the URL.
+        Works with Amazon, Flipkart, Meesho, and generic URLs.
+        """
+        if not url:
+            return url
+
+        parsed = urlparse(url)
+        domain = parsed.netloc.lower()
+        params = parse_qs(parsed.query, keep_blank_values=True)
+
+        # Amazon: use ?tag=your-id-21
+        if domain.endswith('.amazon.in') or domain.endswith('.amazon.com') or domain == 'amzn.in':
+            if self.amazon_tag:
+                params['tag'] = [self.amazon_tag]
+                logger.info(f"Injected Amazon tag: {self.amazon_tag}")
+
+        # Flipkart: use ?affid=your-id
+        elif domain.endswith('.flipkart.com'):
+            params['affid'] = [self.flipkart_id]
+            logger.info(f"Injected Flipkart affid: {self.flipkart_id}")
+
+        # Meesho: use ?aff_id=your-id
+        elif domain.endswith('.meesho.com'):
+            if self.meesho_id:
+                params['aff_id'] = [self.meesho_id]
+                logger.info(f"Injected Meesho aff_id: {self.meesho_id}")
+
+        new_query = urlencode(params, doseq=True)
+        return urlunparse(parsed._replace(query=new_query))
 
     def _generate_short_code(self, url: str, product_id: int, platform: str) -> str:
         """Generate a unique 8-character short code."""
@@ -81,14 +136,18 @@ class LinkBuilder:
 
     @staticmethod
     def add_utm(url: str, platform: str) -> str:
-        """Add UTM parameters to an affiliate URL."""
+        """Add UTM parameters to a URL for a specific platform."""
         utm_params = LinkBuilder.PLATFORM_UTM.get(platform, {})
         if not utm_params:
             return url
 
         parsed = urlparse(url)
-        existing_params = parse_qs(parsed.query)
-        existing_params.update(utm_params)
+        params = parse_qs(parsed.query, keep_blank_values=True)
 
-        new_query = urlencode(existing_params, doseq=True)
-        return parsed._replace(query=new_query).geturl()
+        # Only add UTM params that aren't already present
+        for key, value in utm_params.items():
+            if key not in params:
+                params[key] = [value]
+
+        new_query = urlencode(params, doseq=True)
+        return urlunparse(parsed._replace(query=new_query))

@@ -60,9 +60,18 @@ class ContentGenerator:
         """
         if recycle:
             # Recycle: pick products that have been posted before,
-            # sorted by least recently generated for variety
+            # but EXCLUDE products that already have pending posts in the queue
+            # to prevent duplicate posting of the same product
+            # Skip products that already have pending posts
+            # (prevents duplicate posting of the same product)
+            products_with_pending = PostQueue.objects.filter(
+                status='pending'
+            ).values_list('product_id', flat=True).distinct()
+
             products = Product.objects.filter(
                 ai_tagline__gt=''
+            ).exclude(
+                id__in=products_with_pending
             ).order_by('?')[:limit]
         else:
             # Fresh: only products that haven't had content generated yet
@@ -138,13 +147,13 @@ class ContentGenerator:
             'category': product.get_category_display() if product.category else 'Dress',
             'ai_tagline': tagline,
             'stock_left': random.randint(5, 50),
-            'affiliate_link': affiliate_links['telegram'],
             'season': season,
         }
 
         captions = {}
         for platform in platforms:
-            # Add platform-specific hashtags to context
+            # Use the platform-specific tracked link and hashtags
+            context['affiliate_link'] = affiliate_links[platform]
             context['hashtags'] = random_hashtags(platform)
             captions[f'{platform}_caption'] = self.generate_caption(product, platform, context)
 

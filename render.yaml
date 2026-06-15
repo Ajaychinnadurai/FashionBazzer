@@ -136,7 +136,6 @@ services:
   - type: web
     name: fashionbazzer-frontend
     runtime: static
-    region: singapore
     rootDir: frontend
     buildCommand: npm install && npm run build
     publishDir: build
