@@ -18,7 +18,8 @@ from django.utils import timezone
 from .caption_templates import (
     TELEGRAM_TEMPLATES, INSTAGRAM_TEMPLATES, FACEBOOK_TEMPLATES,
     PINTEREST_TEMPLATES, TWITTER_TEMPLATES, THREADS_TEMPLATES,
-    CAPTION_STYLES, get_caption_style_for_post
+    CAPTION_STYLES, get_caption_style_for_post,
+    random_hashtags, SEASONS,
 )
 from .models import GenerationLog
 from apps.poster.models import PostQueue, PostLog
@@ -125,6 +126,7 @@ class ContentGenerator:
             )
 
         # Step 3: Generate captions for each platform
+        season = random.choice(SEASONS)
         context = {
             'product_name': product.name[:50],
             'price': int(product.sale_price),
@@ -137,10 +139,13 @@ class ContentGenerator:
             'ai_tagline': tagline,
             'stock_left': random.randint(5, 50),
             'affiliate_link': affiliate_links['telegram'],
+            'season': season,
         }
 
         captions = {}
         for platform in platforms:
+            # Add platform-specific hashtags to context
+            context['hashtags'] = random_hashtags(platform)
             captions[f'{platform}_caption'] = self.generate_caption(product, platform, context)
 
         # Step 4: Compose image with overlays

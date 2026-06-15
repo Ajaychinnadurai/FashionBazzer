@@ -41,13 +41,25 @@ function CustomTooltip({ active, payload }) {
 
 export default function ClicksChart({ data = [] }) {
   if (data.length === 0) {
-    data = [
-      { name: 'Telegram', value: 4500 },
-      { name: 'Instagram', value: 3200 },
-      { name: 'Facebook', value: 1800 },
-      { name: 'Pinterest', value: 5200 },
-      { name: 'Twitter', value: 2100 },
-    ];
+    return (
+      <div className="glass-card" style={{ padding: '24px' }}>
+        <h3 className="section-title">
+          <span className="icon">👆</span> Clicks by Platform
+        </h3>
+        <div style={{
+          height: 320,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--text-muted)',
+          flexDirection: 'column',
+          gap: 8,
+        }}>
+          <span style={{ fontSize: '2rem' }}>📊</span>
+          <p>No click data yet. Start posting products to see analytics here.</p>
+        </div>
+      </div>
+    );
   }
 
   return (

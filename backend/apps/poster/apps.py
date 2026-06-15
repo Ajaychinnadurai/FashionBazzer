@@ -15,8 +15,11 @@ class PosterConfig(AppConfig):
         Start the automation scheduler when Django is ready.
         Called once when Django starts (dev server, gunicorn, or worker).
         """
+        import logging
         import os
         import sys
+
+        logger = logging.getLogger(__name__)
 
         # Never start scheduler during management commands that touch the DB
         # or during Django's first-pass setup (before the autoreloader kicks in)
@@ -37,14 +40,22 @@ class PosterConfig(AppConfig):
         if 'runserver' in argv:
             if run_once != 'true':
                 return
+            # Dev server: start scheduler in background
+            import threading
+            def _start_lazy():
+                from .scheduler import start_scheduler
+                try:
+                    start_scheduler()
+                except Exception as e:
+                    logger.error(f"Failed to start scheduler: {e}")
+            threading.Thread(target=_start_lazy, daemon=True).start()
+            return
 
-        # For gunicorn/uwsgi/worker/runapscheduler: RUN_MAIN is not set,
-        # but we skip the runserver guard above and start the scheduler directly.
-
-        from .scheduler import start_scheduler
-        try:
-            start_scheduler()
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to start scheduler: {e}")
+        # gunicorn/web process: NOT starting the scheduler here.
+        # The scheduler runs as a separate Render worker service
+        # via `python manage.py run_scheduler`.
+        # This prevents duplicate job execution and reduces memory.
+        logger.info(
+            "Scheduler not started in web process. "
+            "Run 'python manage.py run_scheduler' in a separate worker."
+        )

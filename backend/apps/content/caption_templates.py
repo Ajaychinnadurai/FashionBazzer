@@ -1,18 +1,37 @@
 """
 Caption style templates and rotation logic for FashionBazzer.
-Each platform gets different caption styles to avoid repetition.
+Enhanced with more variety, seasonal formats, and platform-specific best practices.
 """
 import random
 
+# ── Caption style rotation ──
 CAPTION_STYLES = [
-    "excited",      # 🔥 OMG you NEED this!
-    "informative",  # 📊 4.8/5 stars, 2000+ reviews
-    "urgency",      # ⏰ Only 23 left in stock!
-    "social_proof", # 💃 1200 people bought this week
-    "lifestyle",    # ✨ Perfect for your next girls' trip
-    "discount",     # 💸 70% off — ends tonight!
-    "trendy",       # 🌊 This is giving main character energy
-    "question",     # 🤔 Looking for a dress under ₹500?
+    "excited",
+    "informative",
+    "urgency",
+    "social_proof",
+    "lifestyle",
+    "discount",
+    "trendy",
+    "question",
+    "storytelling",
+    "seasonal",
+    "comparison",
+    "challenge",
+]
+
+# Seasonal events for context-aware captions
+SEASONS = [
+    "Summer Vibes ☀️",
+    "Monsoon Magic 🌧️",
+    "Festival Season 🪔",
+    "College Fest 🎓",
+    "Weekend Party 🎉",
+    "Date Night 💕",
+    "Beach Day 🏖️",
+    "Brunch Date 🥂",
+    "Night Out 🌃",
+    "Office Chic 💼",
 ]
 
 
@@ -21,8 +40,50 @@ def get_caption_style_for_post(post_index: int) -> str:
     return CAPTION_STYLES[post_index % len(CAPTION_STYLES)]
 
 
+# ── Hashtag bank per platform ──
+HASHTAGS = {
+    "telegram": [
+        "#FashionBazzer #TrendingFashion #DressGoals #GenZFashion",
+        "#FashionBazzer #OOTD #BudgetFashion #IndianFashion",
+        "#FashionBazzer #DressOfTheDay #StyleInspo #FashionDaily",
+        "#FashionBazzer #TrendyDress #CollegeFashion #PartyWear",
+        "#FashionBazzer #FashionSale #DressUnder500 #NewArrival",
+        "#FashionBazzer #InstaFashion #DressLove #StyleGoals",
+        "#FashionBazzer #FashionDeals #CuteDress #TrendAlert",
+        "#FashionBazzer #FashionAddict #DressCollection #OOTDIndia",
+    ],
+    "instagram": [
+        "#FashionBazzer #OOTD #GenZFashion #DressOfTheDay #TrendingNow #StyleInspo #IndianFashion #BudgetFashion",
+        "#FashionBazzer #InstaStyle #DressGoals #FashionDaily #OOTDIndia #TrendyDress #CollegeWear #PartyLook",
+        "#FashionBazzer #StyleInspo #DressLove #FashionAddict #WhatIWore #DesiFashion #CuteDress #VibeCheck",
+    ],
+    "facebook": [
+        "#FashionBazzer #TrendingFashion #DressSale #IndianFashion",
+        "#FashionBazzer #FashionDaily #DressGoals #StyleInspo",
+    ],
+    "pinterest": [
+        "#FashionBazzer #DressInspo #OOTD #IndianFashion #TrendyDress",
+        "#FashionBazzer #FashionBlog #DressStyle #BudgetFashion",
+    ],
+    "twitter": [
+        "#FashionBazzer #OOTD #DressGoals",
+        "#FashionBazzer #TrendingNow #FashionDeal",
+    ],
+    "threads": [
+        "#FashionBazzer #DressGoals",
+        "#FashionBazzer #OOTD #Style",
+    ],
+}
+
+
+def random_hashtags(platform: str) -> str:
+    """Pick a random hashtag set for the given platform."""
+    tags = HASHTAGS.get(platform, HASHTAGS["telegram"])
+    return random.choice(tags)
+
+
 # ──────────────────────────────────────────
-# TELEGRAM TEMPLATES
+# TELEGRAM TEMPLATES (10 styles)
 # ──────────────────────────────────────────
 TELEGRAM_TEMPLATES = {
     "excited": """🔥 TRENDING NOW! 👗
@@ -36,7 +97,7 @@ TELEGRAM_TEMPLATES = {
 🛒 Shop Now 👇
 {affiliate_link}
 
-#FashionBazzer #TrendingFashion #DressGoals #GenZFashion #{category}""",
+{hashtags}""",
 
     "informative": """📊 TOP RATED DRESS ALERT!
 
@@ -51,7 +112,7 @@ TELEGRAM_TEMPLATES = {
 👇 Grab yours:
 {affiliate_link}
 
-#FashionBazzer #TopRated #DressLover #GenZFashion""",
+{hashtags}""",
 
     "urgency": """⏰ FLASH DEAL! Only a few left!
 
@@ -65,7 +126,7 @@ TELEGRAM_TEMPLATES = {
 🛒 Order now before it sells out:
 {affiliate_link}
 
-#FashionBazzer #FlashSale #TrendingNow #{category}""",
+{hashtags}""",
 
     "discount": """💸 BIG DISCOUNT ALERT!
 
@@ -78,7 +139,7 @@ TELEGRAM_TEMPLATES = {
 Don't miss this deal! 👇
 {affiliate_link}
 
-#FashionBazzer #DealAlert #DiscountFashion #BudgetStyle""",
+{hashtags}""",
 
     "lifestyle": """✨ New in your feed!
 
@@ -93,7 +154,7 @@ Perfect for: dates, college, parties, brunch 🎉
 Get yours: 👇
 {affiliate_link}
 
-#FashionBazzer #OOTD #StyleInspo #EverydayFashion""",
+{hashtags}""",
 
     "trendy": """🌊 This is YOUR sign to buy this dress!
 
@@ -106,7 +167,7 @@ Get yours: 👇
 👇
 {affiliate_link}
 
-#FashionBazzer #MainCharacterEnergy #TrendyDress #{category}""",
+{hashtags}""",
 
     "question": """🤔 Looking for the perfect {category} dress?
 
@@ -119,7 +180,7 @@ Say hello to {product_name} ✨
 👇 Shop now:
 {affiliate_link}
 
-#FashionBazzer #DressGoals #FindYourDress #{category}""",
+{hashtags}""",
 
     "social_proof": """💃 JOIN {reviews}+ happy customers!
 
@@ -132,11 +193,40 @@ Say hello to {product_name} ✨
 Thousands loving this — don't miss out! 👇
 {affiliate_link}
 
-#FashionBazzer #TrendingNow #MostLoved #{category}""",
+{hashtags}""",
+
+    "storytelling": """📖 The story behind this dress…
+
+A {category} dream that's affordable, stylish, and comfortable.
+{product_name} was designed for nights out, days in, and everything between ✨
+
+⭐ {rating}/5 · {reviews} reviews
+💰 ₹{price}
+
+{ai_tagline}
+
+👇 Your story starts here:
+{affiliate_link}
+
+{hashtags}""",
+
+    "seasonal": """☀️ {season} called — they want THIS dress!
+
+{product_name} — the ultimate {category} piece for your {season} wardrobe 🔥
+
+⭐ {rating}/5 · {reviews}+ reviews
+💰 ₹{price} (Save {discount}%)
+
+{ai_tagline}
+
+👇 Get ready for {season}:
+{affiliate_link}
+
+{hashtags}""",
 }
 
 # ──────────────────────────────────────────
-# INSTAGRAM TEMPLATES
+# INSTAGRAM TEMPLATES (6 styles)
 # ──────────────────────────────────────────
 INSTAGRAM_TEMPLATES = {
     "excited": """{ai_tagline} ✨
@@ -146,9 +236,7 @@ Price: ₹{price} only 🤯 (was ₹{original_price})
 
 🛒 Link in bio to shop!
 
-#FashionBazzer #OOTD #GenZFashion
-#DressOfTheDay #TrendingNow #StyleInspo
-#IndianFashion #BudgetFashion #CollegeOutfit""",
+{hashtags}""",
 
     "lifestyle": """✨ Steal of the day!
 
@@ -162,7 +250,7 @@ or college party 🎉
 
 👇 Link in bio!
 
-#FashionBazzer #OOTD #DressGoals #FashionDaily""",
+{hashtags}""",
 
     "discount": """💸 Deal alert! Save {discount}%!
 
@@ -173,11 +261,46 @@ Limited stock! Grab fast 🏃‍♀️
 
 {ai_tagline}
 
-#FashionBazzer #BudgetFashion #DealAlert #DressSale""",
+{hashtags}""",
+
+    "trendy": """🔥 POV: You found the perfect {category} dress
+
+{product_name}
+₹{price} · ⭐ {rating}/5
+
+{ai_tagline}
+
+Link in bio to shop! 👆
+
+{hashtags}""",
+
+    "storytelling": """🎀 You deserve this. Period.
+
+{product_name}
+₹{price} (was ₹{original_price})
+
+{ai_tagline}
+
+✨ Treat yourself — link in bio!
+
+{hashtags}""",
+
+    "seasonal": """☀️ {season} essentials loaded 🔥
+
+{product_name}
+₹{price} · ⭐ {rating}/5
+
+Your new favorite for {season} ✨
+
+{ai_tagline}
+
+Link in bio!
+
+{hashtags}""",
 }
 
 # ──────────────────────────────────────────
-# FACEBOOK TEMPLATES
+# FACEBOOK TEMPLATES (5 styles)
 # ──────────────────────────────────────────
 FACEBOOK_TEMPLATES = {
     "excited": """💃 DEAL ALERT for all fashion lovers!
@@ -213,29 +336,55 @@ Order now 👇
 
 Don't be the only one missing out! 👇
 {affiliate_link}""",
+
+    "lifestyle": """✨ Weekend plans? We've got your outfit sorted!
+
+{product_name}
+₹{price} · ⭐ {rating}/5
+
+{ai_tagline}
+
+👇 Shop now:
+{affiliate_link}""",
+
+    "trendy": """🌊 This dress is breaking the internet!
+
+{product_name} — trending at ₹{price} only 🔥
+⭐ {rating}/5 · {reviews}+ reviews
+
+{ai_tagline}
+
+👇 Grab yours:
+{affiliate_link}""",
 }
 
 # ──────────────────────────────────────────
-# PINTEREST TEMPLATES
+# PINTEREST TEMPLATES (4 styles)
 # ──────────────────────────────────────────
 PINTEREST_TEMPLATES = {
-    "default": "{product_name} | ₹{price} | {ai_tagline} | Shop: {affiliate_link}",
-    "trendy": "Trending: {product_name} just ₹{price} 🔥 {ai_tagline} #{category} #FashionBazzer",
+    "default": "{product_name} | ₹{price} | {ai_tagline} | Shop: {affiliate_link} {hashtags}",
+    "trendy": "Trending: {product_name} just ₹{price} 🔥 {ai_tagline} {hashtags}",
+    "lifestyle": "How to style {product_name} for {season} ✨ {ai_tagline} ₹{price} only! {hashtags}",
+    "comparison": "Before: Overpaying at malls 🤯 After: {product_name} at just ₹{price} 😍 {ai_tagline} {hashtags}",
 }
 
 # ──────────────────────────────────────────
-# TWITTER/X TEMPLATES
+# TWITTER/X TEMPLATES (5 styles)
 # ──────────────────────────────────────────
 TWITTER_TEMPLATES = {
-    "excited": "🔥 {product_name} for just ₹{price}! {ai_tagline} 👗 #Fashion #OOTD",
-    "discount": "💰 Save {discount}%! {product_name} now ₹{price} (was ₹{original_price}). {ai_tagline} 👗 #DealAlert",
-    "trendy": "✨ {product_name} is trending! ₹{price} only. {ai_tagline} 👗 #FashionBazzer",
+    "excited": "🔥 {product_name} for just ₹{price}! {ai_tagline} 👗 {hashtags}",
+    "discount": "💰 Save {discount}%! {product_name} now ₹{price} (was ₹{original_price}). {ai_tagline} 👗 {hashtags}",
+    "trendy": "✨ {product_name} is trending! ₹{price} only. {ai_tagline} 👗 {hashtags}",
+    "question": "🤔 Need a {category} dress under ₹{price}? 👗 {product_name}. {ai_tagline} {hashtags}",
+    "lifestyle": "💃 Your {season} wardrobe isn't complete without {product_name}. Just ₹{price}! {ai_tagline} {hashtags}",
 }
 
 # ──────────────────────────────────────────
-# THREADS TEMPLATES
+# THREADS TEMPLATES (4 styles)
 # ──────────────────────────────────────────
 THREADS_TEMPLATES = {
-    "trendy": "{ai_tagline}\n\n✨ {product_name}\n💰 ₹{price}\n\n#FashionBazzer #DressGoals",
-    "question": "Rate this dress 1-10 👇\n\n{product_name} · ₹{price}\n{ai_tagline}\n\n#FashionBazzer",
+    "trendy": "{ai_tagline}\n\n✨ {product_name}\n💰 ₹{price}\n\n{hashtags}",
+    "question": "Rate this dress 1-10 👇\n\n{product_name} · ₹{price}\n{ai_tagline}\n\n{hashtags}",
+    "lifestyle": "This is your sign to buy that {category} dress you've been eyeing ✨\n\n{product_name} · ₹{price}\n{ai_tagline}\n\n{hashtags}",
+    "storytelling": "PSA: {product_name} exists and it's only ₹{price} 😍\n\n{ai_tagline}\n\n{hashtags}",
 }

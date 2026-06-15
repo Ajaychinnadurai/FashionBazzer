@@ -4,9 +4,9 @@
  */
 
 const AFFILIATE_IDS = {
-  amazon: process.env.REACT_APP_AMAZON_ASSOCIATE_ID || 'fashionbazzer-21',
-  meesho: process.env.REACT_APP_MEESHO_ID || 'demo',
-  flipkart: process.env.REACT_APP_FLIPKART_ID || 'demo',
+  amazon: process.env.REACT_APP_AMAZON_ASSOCIATE_ID || '',
+  meesho: process.env.REACT_APP_MEESHO_ID || '',
+  flipkart: process.env.REACT_APP_FLIPKART_ID || '',
 };
 
 const BASE_REDIRECT = process.env.REACT_APP_REDIRECT_BASE || 'https://fashionbazzer-backend.onrender.com/r';

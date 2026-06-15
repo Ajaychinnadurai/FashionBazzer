@@ -3,7 +3,6 @@ Amazon affiliate scraper for FashionBazzer.
 Uses Amazon Product Advertising API 5.0 via the PAAPI SDK.
 """
 import logging
-import random
 from typing import Dict, List
 from .base_scraper import BaseScraper, TRENDING_KEYWORDS
 from django.conf import settings
@@ -47,60 +46,12 @@ class AmazonScraper(BaseScraper):
         """
         Search Amazon for products matching query.
         Uses Product Advertising API 5.0 (PAAPI).
+
+        Returns empty list until PAAPI SDK is installed and configured —
+        no fake/mock data is ever injected. Real data only.
         """
-        try:
-            from paapi5_python_sdk.api.default_api import DefaultApi
-            from paapi5_python_sdk.models import (
-                SearchItemsRequest, SearchItemsResource,
-                PartnerType, Marketplace
-            )
-
-            # In production, use the actual PAAPI SDK
-            # For now, return mock data for development
-            return self._get_mock_products(query)
-
-        except ImportError:
-            logger.warning("PAAPI SDK not installed, using mock data")
-            return self._get_mock_products(query)
-
-    def _get_mock_products(self, query: str) -> List[Dict]:
-        """Mock product data for development."""
-        mock_products = [
-            {
-                'name': f'{query.title()} - Trendy Floral Print Dress',
-                'original_price': 1999,
-                'sale_price': 449,
-                'rating': round(random.uniform(4.2, 4.9), 1),
-                'review_count': random.randint(500, 10000),
-                'category': 'wrap',
-                'product_url': f'https://amazon.in/dp/AMZ{random.randint(1000,9999)}',
-                'affiliate_url': f'https://amazon.in/dp/AMZ{random.randint(1000,9999)}?tag={self.associate_tag}',
-                'image_url': f'https://source.unsplash.com/600x750/?floral,dress,print&sig={random.randint(1,999)}',
-                'is_trending': True,
-            },
-            {
-                'name': f'Women\'s Casual {query.title()} - Latest Collection',
-                'original_price': 2499,
-                'sale_price': 699,
-                'rating': round(random.uniform(4.0, 4.8), 1),
-                'review_count': random.randint(200, 5000),
-                'category': 'bodycon',
-                'product_url': f'https://amazon.in/dp/AMZ{random.randint(1000,9999)}',
-                'affiliate_url': f'https://amazon.in/dp/AMZ{random.randint(1000,9999)}?tag={self.associate_tag}',
-                'image_url': f'https://source.unsplash.com/600x750/?casual,dress,streetwear&sig={random.randint(1,999)}',
-                'is_trending': True,
-            },
-            {
-                'name': f'Elegant {query.title()} Maxi Dress for Women',
-                'original_price': 1599,
-                'sale_price': 549,
-                'rating': round(random.uniform(4.3, 4.9), 1),
-                'review_count': random.randint(300, 8000),
-                'category': 'cottagecore',
-                'product_url': f'https://amazon.in/dp/AMZ{random.randint(1000,9999)}',
-                'affiliate_url': f'https://amazon.in/dp/AMZ{random.randint(1000,9999)}?tag={self.associate_tag}',
-                'image_url': f'https://source.unsplash.com/600x750/?maxi,dress,elegant&sig={random.randint(1,999)}',
-                'is_trending': False,
-            },
-        ]
-        return mock_products
+        logger.warning(
+            "Amazon PAAPI SDK not installed/configured. "
+            "Install paapi5-python-sdk and set AMAZON_ASSOCIATE_ID to scrape."
+        )
+        return []

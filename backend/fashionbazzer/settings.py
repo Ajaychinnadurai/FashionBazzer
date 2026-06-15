@@ -11,17 +11,28 @@ from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production')
+# ── Helpers for env var parsing ──
+def _parse_bool(value):
+    """Parse a string/env-var into a boolean.
+    'true', '1', 'yes' → True (case-insensitive).
+    Everything else → False.
+    Using cast=bool directly would be wrong since bool('false') == True.
+    """
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in ('true', '1', 'yes')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
-
-# Helper to parse comma-separated lists from env vars
 def _parse_list(value):
     if not value:
         return []
     return [item.strip() for item in value.split(',') if item.strip()]
+
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production')
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = config('DEBUG', default=True, cast=_parse_bool)
 
 ALLOWED_HOSTS = _parse_list(config('ALLOWED_HOSTS', default='localhost,127.0.0.1'))
 
@@ -44,6 +55,7 @@ INSTALLED_APPS = [
     'apps.poster',
     'apps.tracker',
     'apps.dashboard',
+    'apps.marketing',
 ]
 
 MIDDLEWARE = [
@@ -78,6 +90,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'fashionbazzer.wsgi.application'
 ASGI_APPLICATION = 'fashionbazzer.asgi.application'
+
+# ── Security Settings (production only) ──
+if not DEBUG:
+    # Redirect all HTTP to HTTPS
+    SECURE_SSL_REDIRECT = True
+    # Render uses proxy headers — trust them for HTTPS detection
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # Use secure cookies (HTTPS only)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # HTTP Strict Transport Security (1 year)
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    # Prevent clickjacking
+    X_FRAME_OPTIONS = 'DENY'
 
 # Database
 # Use PostgreSQL in production, SQLite for local development

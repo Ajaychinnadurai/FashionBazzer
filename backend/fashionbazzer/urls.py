@@ -13,6 +13,7 @@ urlpatterns = [
     path('api/queue/', include('apps.poster.urls')),
     path('api/analytics/', include('apps.tracker.urls')),
     path('api/dashboard/', include('apps.dashboard.urls')),
+    path('api/marketing/', include('apps.marketing.urls')),
     # Redirect + Track clicks (no /api/ prefix)
     path('r/', include('apps.tracker.redirect_urls')),
 ]

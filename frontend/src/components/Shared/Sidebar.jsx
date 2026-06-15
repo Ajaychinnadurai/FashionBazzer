@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { FiHome, FiGrid, FiSend, FiBarChart2, FiSettings } from 'react-icons/fi';
 
 const NAV_ITEMS = [
-  { path: '/', icon: FiHome, label: 'Overview' },
+  { path: '/dashboard', icon: FiHome, label: 'Overview' },
   { path: '/products', icon: FiGrid, label: 'Products' },
   { path: '/posts', icon: FiSend, label: 'Posts & Queue' },
   { path: '/analytics', icon: FiBarChart2, label: 'Analytics' },
@@ -60,7 +60,7 @@ export default function Sidebar({ isOpen, onToggle }) {
             <NavLink
               key={item.path}
               to={item.path}
-              end={item.path === '/'}
+              end={item.path === '/dashboard'}
               style={({ isActive }) => ({
                 display: 'flex',
                 alignItems: 'center',

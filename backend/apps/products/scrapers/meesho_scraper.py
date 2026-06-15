@@ -50,9 +50,15 @@ class MeeshoScraper(BaseScraper):
     def search_products(self, query: str) -> List[Dict]:
         """
         Search Meesho for products matching the query.
-        Uses the Meesho Affiliate API.
+        Uses the Meesho Affiliate API. Never returns fake/mock data.
         """
-        # Simulated API call - in production, use the actual Meesho Affiliate API
+        # Only attempt real API call if an API key is configured
+        if not self.api_key or self.api_key in ('demo', ''):
+            logger.warning(
+                "Meesho API key not configured. Set MEESHO_AFFILIATE_ID env var."
+            )
+            return []
+
         headers = {
             'Authorization': f'Bearer {self.api_key}',
             'Content-Type': 'application/json',
@@ -78,12 +84,10 @@ class MeeshoScraper(BaseScraper):
                 logger.warning(
                     f"Meesho API returned {response.status_code}: {response.text[:200]}"
                 )
-                # Return mock data for development
-                return self._get_mock_products(query)
+                return []
         except requests.RequestException as e:
             logger.error(f"Meesho API request failed: {e}")
-            # Return mock data for development when API is not configured
-            return self._get_mock_products(query)
+            return []
 
     def _parse_products(self, data: Dict) -> List[Dict]:
         """Parse Meesho API response into standardized format."""
@@ -101,70 +105,3 @@ class MeeshoScraper(BaseScraper):
                 'image_url': item.get('image', ''),
             })
         return products
-
-    def _get_mock_products(self, query: str) -> List[Dict]:
-        """Generate mock product data for development/demo."""
-        import random
-        mock_products = [
-            {
-                'name': f'Trendy {query.title()} Co-ord Set - Latest Collection',
-                'original_price': 1299,
-                'sale_price': 399,
-                'rating': round(random.uniform(4.0, 4.9), 1),
-                'review_count': random.randint(100, 5000),
-                'category': 'co-ord',
-                'product_url': f'https://meesho.com/dress/{query.replace(" ", "-")}-1',
-                'affiliate_url': f'https://affiliate.meesho.com/dress/{query.replace(" ", "-")}-1?aff_id={self.api_key}',
-                'image_url': f'https://source.unsplash.com/600x750/?dress,fashion,trendy&sig={random.randint(1,999)}',
-                'is_trending': True,
-            },
-            {
-                'name': f'Stylish {query.title()} Bodycon Dress for Women',
-                'original_price': 1499,
-                'sale_price': 499,
-                'rating': round(random.uniform(4.0, 4.8), 1),
-                'review_count': random.randint(50, 3000),
-                'category': 'bodycon',
-                'product_url': f'https://meesho.com/dress/{query.replace(" ", "-")}-2',
-                'affiliate_url': f'https://affiliate.meesho.com/dress/{query.replace(" ", "-")}-2?aff_id={self.api_key}',
-                'image_url': f'https://source.unsplash.com/600x750/?dress,bodycon,fashion&sig={random.randint(1,999)}',
-                'is_trending': True,
-            },
-            {
-                'name': f'Casual {query.title()} Maxi Dress - Summer Special',
-                'original_price': 999,
-                'sale_price': 299,
-                'rating': round(random.uniform(4.0, 4.7), 1),
-                'review_count': random.randint(200, 8000),
-                'category': 'cottagecore',
-                'product_url': f'https://meesho.com/dress/{query.replace(" ", "-")}-3',
-                'affiliate_url': f'https://affiliate.meesho.com/dress/{query.replace(" ", "-")}-3?aff_id={self.api_key}',
-                'image_url': f'https://source.unsplash.com/600x750/?maxi,dress,summer&sig={random.randint(1,999)}',
-                'is_trending': False,
-            },
-            {
-                'name': f'Designer {query.title()} Indo-Western Fusion Dress',
-                'original_price': 1899,
-                'sale_price': 699,
-                'rating': round(random.uniform(4.2, 4.9), 1),
-                'review_count': random.randint(80, 2000),
-                'category': 'indo-western',
-                'product_url': f'https://meesho.com/dress/{query.replace(" ", "-")}-4',
-                'affiliate_url': f'https://affiliate.meesho.com/dress/{query.replace(" ", "-")}-4?aff_id={self.api_key}',
-                'image_url': f'https://source.unsplash.com/600x750/?fusion,indo,western,dress&sig={random.randint(1,999)}',
-                'is_trending': True,
-            },
-            {
-                'name': f'Party Wear {query.title()} Cut-out Dress - Trending Now',
-                'original_price': 1699,
-                'sale_price': 599,
-                'rating': round(random.uniform(4.0, 4.6), 1),
-                'review_count': random.randint(60, 1500),
-                'category': 'cut-out',
-                'product_url': f'https://meesho.com/dress/{query.replace(" ", "-")}-5',
-                'affiliate_url': f'https://affiliate.meesho.com/dress/{query.replace(" ", "-")}-5?aff_id={self.api_key}',
-                'image_url': f'https://source.unsplash.com/600x750/?party,dress,nightout&sig={random.randint(1,999)}',
-                'is_trending': False,
-            },
-        ]
-        return mock_products
