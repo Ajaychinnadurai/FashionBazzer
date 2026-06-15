@@ -130,7 +130,7 @@ services:
         sync: false
       - key: REDIRECT_BASE_URL
         value: https://fashionbazzer-backend.onrender.com/r/
-    plan: free
+    plan: starter
 
   # ─── React Frontend ─────────────────────────────
   - type: web
@@ -139,13 +139,12 @@ services:
     region: singapore
     rootDir: frontend
     buildCommand: npm install && npm run build
-    publishDir: build
+    staticPublishPath: ./build
     envVars:
       - key: REACT_APP_API_URL
         value: https://fashionbazzer-backend.onrender.com/api
       - key: REACT_APP_REDIRECT_BASE
         value: https://fashionbazzer-backend.onrender.com/r
-    plan: free
 
 databases:
   - name: fashionbazzer-db
