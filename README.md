@@ -36,6 +36,16 @@ npm start
 
 ---
 
+## 🌐 Live Deploy
+
+- **Frontend**: [https://fashionbazzer-frontend.onrender.com](https://fashionbazzer-frontend.onrender.com)
+- **Backend API**: [https://fashionbazzer-backend.onrender.com/api/](https://fashionbazzer-backend.onrender.com/api/)
+- **Admin Panel**: [https://fashionbazzer-backend.onrender.com/admin/](https://fashionbazzer-backend.onrender.com/admin/)
+
+> **Note**: After pushing to GitHub, trigger **Manual Deploy** → **Deploy latest commit** on Render Dashboard for both services to pick up changes.
+
+---
+
 ## 🏗️ Architecture
 
 ```
