@@ -120,25 +120,6 @@ services:
         value: https://fashionbazzer-backend.onrender.com/r/
     plan: free
 
-  # ─── React Frontend ──────────────────────────────
-  - type: static
-    name: fashionbazzer-frontend
-    runtime: node
-    region: singapore
-    sourceDir: frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./build
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: REACT_APP_API_URL
-        value: https://fashionbazzer-backend.onrender.com/api
-      - key: REACT_APP_REDIRECT_BASE
-        value: https://fashionbazzer-backend.onrender.com/r
-    plan: free
-
 databases:
   - name: fashionbazzer-db
     databaseName: fashionbazzer
