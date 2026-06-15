@@ -9,9 +9,11 @@ from typing import Dict, List, Optional
 from django.db.models import Sum, Count, Avg, Q
 from django.utils import timezone
 
+from django.conf import settings
 from .models import TrackedLink, Click, Commission, PlatformConnection
 from apps.products.models import Product
 from apps.poster.models import PostQueue, PostLog
+
 
 logger = logging.getLogger(__name__)
 
@@ -169,11 +171,24 @@ class CommissionSync:
         return results
 
     def sync_platform(self, platform: str) -> int:
+        """Fetch and save commission data for a specific platform.
+
+        Production behavior: integrate with the affiliate network APIs.
+
+        Dev/demo behavior: OFF by default. We never create fake commissions
+        automatically because it can pollute dashboard analytics.
         """
-        Fetch and save commission data for a specific platform.
-        In production, this calls each affiliate network's API.
-        """
-        # Mock: create sample commission records for demo
+        # Disable all demo commission creation unless explicitly enabled.
+        # This prevents “fallback/demo data” from showing up in production dashboards.
+        demo_enabled = getattr(settings, 'FASHIONBAZZER_DEMO_COMMISSION_SYNC', False)
+        if not demo_enabled:
+            logger.info(
+                "Commission sync skipped for %s (demo mode disabled)",
+                platform,
+            )
+            return 0
+
+        # Demo mode (manual/test only): create sample commission records.
         products = Product.objects.filter(platform=platform)[:5]
         count = 0
 
@@ -187,7 +202,6 @@ class CommissionSync:
                 affiliate_platform=platform,
                 recorded_at__date=timezone.now().date(),
             ).exists():
-                # Simulated commission: 8% of sale price per ~100 clicks
                 estimated_commission = float(product.sale_price) * 0.08 * min(click_count / 100, 1)
                 if estimated_commission > 0:
                     Commission.objects.create(
@@ -199,3 +213,4 @@ class CommissionSync:
                     count += 1
 
         return count
+
