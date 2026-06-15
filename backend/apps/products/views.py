@@ -50,7 +50,11 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             try:
                 from apps.content.ai_generator import ContentGenerator
                 generator = ContentGenerator()
-                # Set fallback taglines directly (skip slow HuggingFace API for samples)
+                # Step 1: Queue posts FIRST while ai_tagline is still ''
+                # (generate_batch filters for ai_tagline='' products)
+                result = generator.generate_batch(limit=10)
+                content_gen = result.get('generated', 0)
+                # Step 2: Then set fallback taglines so future runs skip HuggingFace API
                 FALLBACK_TAGLINES = [
                     "💖 This piece is giving main character energy! 🔥",
                     "✨ Your new closet obsession has arrived! 💫",
@@ -72,9 +76,6 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
                 for product in Product.objects.filter(ai_tagline=''):
                     product.ai_tagline = random.choice(FALLBACK_TAGLINES)
                     product.save(update_fields=['ai_tagline'])
-                # Queue posts with template captions
-                result = generator.generate_batch(limit=10)
-                content_gen = result.get('generated', 0)
             except Exception as e:
                 logger.error(f"Content generation after sample creation failed: {e}")
 
