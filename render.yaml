@@ -4,7 +4,7 @@ services:
     name: fashionbazzer-backend
     runtime: python
     region: singapore
-    sourceDir: backend
+    rootDir: backend
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
     startCommand: bash start.sh
     envVars:
@@ -71,7 +71,7 @@ services:
     name: fashionbazzer-worker
     runtime: python
     region: singapore
-    sourceDir: backend
+    rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: python manage.py run_scheduler
     envVars:
@@ -137,9 +137,9 @@ services:
     name: fashionbazzer-frontend
     runtime: static
     region: singapore
-    sourceDir: frontend
+    rootDir: frontend
     buildCommand: npm install && npm run build
-    publishPath: build
+    publishDir: build
     envVars:
       - key: REACT_APP_API_URL
         value: https://fashionbazzer-backend.onrender.com/api

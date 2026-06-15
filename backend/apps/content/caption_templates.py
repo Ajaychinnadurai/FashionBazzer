@@ -83,146 +83,80 @@ def random_hashtags(platform: str) -> str:
 
 
 # ──────────────────────────────────────────
-# TELEGRAM TEMPLATES (10 styles)
+# TELEGRAM TEMPLATES (6 clean styles)
 # ──────────────────────────────────────────
 TELEGRAM_TEMPLATES = {
-    "excited": """🔥 TRENDING NOW! 👗
+    "style_pick": """✨ Selected Style Pick
 
-{product_name}
-💰 Only ₹{price} (Was ₹{original_price}) — Save {discount}%!
-⭐ {rating}/5 · {reviews} Reviews
-
-✨ {ai_tagline}
-
-🛒 Shop Now 👇
-{affiliate_link}
-
-{hashtags}""",
-
-    "informative": """📊 TOP RATED DRESS ALERT!
-
-{product_name}
-💰 ₹{price} only (M.R.P. ₹{original_price})
-⭐ {rating}/5 stars · {reviews}+ reviews
-
-✅ High quality fabric
-✅ Perfect for {category} look
-✅ {discount}% cheaper than MRP
-
-👇 Grab yours:
-{affiliate_link}
-
-{hashtags}""",
-
-    "urgency": """⏰ FLASH DEAL! Only a few left!
-
-{product_name}
-💥 ₹{price} — That's {discount}% OFF!
-
+🌸 Product: {product_name}
 {ai_tagline}
 
-⚠️ Only {stock_left} left in stock!
+🛍️ Pricing details:
+• Original: ₹{original_price}
+• Deal Price: ₹{price} (Save {discount}%)
 
-🛒 Order now before it sells out:
-{affiliate_link}
+💫 Upgrade your wardrobe today.
+👇 Shop link in the button below! buy now {discount}% off link : {affiliate_link}""",
 
-{hashtags}""",
+    "trending_pick": """🔥 Trending Pick of the Day
 
-    "discount": """💸 BIG DISCOUNT ALERT!
-
-{product_name}
-🤑 Was ₹{original_price} → Now ₹{price}
-🎯 You save ₹{save_amount} ({discount}% OFF!)
-
+👗 Product: {product_name}
 {ai_tagline}
 
-Don't miss this deal! 👇
-{affiliate_link}
+💰 Pricing details:
+• Original Price: ₹{original_price}
+• Deal Price: ₹{price} (Save {discount}%)
 
-{hashtags}""",
+💫 Upgrade your wardrobe today.
+👇 Shop link in the button below! buy now {discount}% off link : {affiliate_link}""",
 
-    "lifestyle": """✨ New in your feed!
+    "budget_pick": """💎 Budget-Friendly Pick
 
-Imagine yourself in this stunning {product_name} 🔥
-Perfect for: dates, college, parties, brunch 🎉
-
-💰 Price: ₹{price} only!
-⭐ {rating}/5 stars from {reviews}+ happy customers
-
+🛍️ Product: {product_name}
 {ai_tagline}
 
-Get yours: 👇
-{affiliate_link}
+📊 Pricing breakdown:
+• Original: ₹{original_price}
+• Deal Price: ₹{price} (Save {discount}%)
 
-{hashtags}""",
+💫 Upgrade your wardrobe today.
+👇 Shop link in the button below! buy now {discount}% off link : {affiliate_link}""",
 
-    "trendy": """🌊 This is YOUR sign to buy this dress!
+    "top_rated": """⭐ Top Rated Style Pick
 
-{product_name} is giving MAIN CHARACTER ENERGY ✨
-🤯 For just ₹{price}?!
-
+🌟 Product: {product_name}
 {ai_tagline}
 
-💕 Trust us, your wardrobe NEEDS this!
-👇
-{affiliate_link}
+🛍️ Pricing details:
+• Original: ₹{original_price}
+• Deal Price: ₹{price} (Save {discount}%)
 
-{hashtags}""",
+💫 Upgrade your wardrobe today.
+👇 Shop link in the button below! buy now {discount}% off link : {affiliate_link}""",
 
-    "question": """🤔 Looking for the perfect {category} dress?
+    "deal_alert": """💥 Hot Deal Alert!
 
-Say hello to {product_name} ✨
-⭐ {rating}/5 · {reviews}+ reviews
-💰 Just ₹{price} (was ₹{original_price})
-
+🎯 Product: {product_name}
 {ai_tagline}
 
-👇 Shop now:
-{affiliate_link}
+🛍️ Pricing details:
+• Original: ₹{original_price}
+• Deal Price: ₹{price} (Save {discount}%)
 
-{hashtags}""",
+💫 Upgrade your wardrobe today.
+👇 Shop link in the button below! buy now {discount}% off link : {affiliate_link}""",
 
-    "social_proof": """💃 JOIN {reviews}+ happy customers!
+    "must_have": """💖 Must-Have Pick
 
-{product_name} is trending BIG TIME 🔥
-⭐ {rating}/5 stars
-💰 Only ₹{price}
-
+🌸 Product: {product_name}
 {ai_tagline}
 
-Thousands loving this — don't miss out! 👇
-{affiliate_link}
+🛍️ Pricing details:
+• Original: ₹{original_price}
+• Deal Price: ₹{price} (Save {discount}%)
 
-{hashtags}""",
-
-    "storytelling": """📖 The story behind this dress…
-
-A {category} dream that's affordable, stylish, and comfortable.
-{product_name} was designed for nights out, days in, and everything between ✨
-
-⭐ {rating}/5 · {reviews} reviews
-💰 ₹{price}
-
-{ai_tagline}
-
-👇 Your story starts here:
-{affiliate_link}
-
-{hashtags}""",
-
-    "seasonal": """☀️ {season} called — they want THIS dress!
-
-{product_name} — the ultimate {category} piece for your {season} wardrobe 🔥
-
-⭐ {rating}/5 · {reviews}+ reviews
-💰 ₹{price} (Save {discount}%)
-
-{ai_tagline}
-
-👇 Get ready for {season}:
-{affiliate_link}
-
-{hashtags}""",
+💫 Upgrade your wardrobe today.
+👇 Shop link in the button below! buy now {discount}% off link : {affiliate_link}""",
 }
 
 # ──────────────────────────────────────────
