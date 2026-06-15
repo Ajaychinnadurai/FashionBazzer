@@ -48,7 +48,31 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         content_gen = 0
         if created > 0:
             try:
+                from apps.content.ai_generator import ContentGenerator
                 generator = ContentGenerator()
+                # Set fallback taglines directly (skip slow HuggingFace API for samples)
+                FALLBACK_TAGLINES = [
+                    "💖 This piece is giving main character energy! 🔥",
+                    "✨ Your new closet obsession has arrived! 💫",
+                    "💃 Slay every moment in this stunning piece! 🔥",
+                    "🌸 Obsessed is an understatement! Get this look ✨",
+                    "⭐ Pure perfection — and we totally get why! 💕",
+                    "🎯 The fit everyone's been asking about! 💥",
+                    "🌟 Affordable luxury at its finest! 💎",
+                    "🔥 Manifesting good vibes in this gorgeous piece 💖",
+                    "💸 Chic, classy, and totally unreal! 🎉",
+                    "👗 Your wardrobe called — it needs this stunner! ✨",
+                    "✨ The definition of style and comfort! 💫",
+                    "🌸 Wear your confidence today! 💪",
+                    "🎀 Twirl-worthy and totally YOU! 💕",
+                    "🌟 Upgrade your style game instantly! 🔥",
+                    "💖 Ready to turn heads wherever you go! 👀",
+                ]
+                import random
+                for product in Product.objects.filter(ai_tagline=''):
+                    product.ai_tagline = random.choice(FALLBACK_TAGLINES)
+                    product.save(update_fields=['ai_tagline'])
+                # Queue posts with template captions
                 result = generator.generate_batch(limit=10)
                 content_gen = result.get('generated', 0)
             except Exception as e:
