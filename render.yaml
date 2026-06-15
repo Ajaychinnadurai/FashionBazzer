@@ -76,6 +76,10 @@ services:
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./build
+    redirects:
+      - source: /*
+        destination: /index.html
+        status: 200
     envVars:
       - key: REACT_APP_API_URL
         value: https://fashionbazzer-backend.onrender.com/api
