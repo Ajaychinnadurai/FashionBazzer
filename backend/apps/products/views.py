@@ -72,9 +72,11 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
                 for product in Product.objects.filter(ai_tagline=''):
                     product.ai_tagline = random.choice(FALLBACK_TAGLINES)
                     product.save(update_fields=['ai_tagline'])
-                # Step 2: Queue posts via generate_for_product with force_regenerate=False
-                # (skips HF API since ai_tagline is already set)
-                for product in Product.objects.all():
+                # Step 2: Queue posts (skip products that already have pending posts)
+                products_with_pending = PostQueue.objects.filter(
+                    status='pending'
+                ).values_list('product_id', flat=True)
+                for product in Product.objects.exclude(id__in=products_with_pending):
                     post = generator.generate_for_product(product, force_regenerate=False)
                     if post:
                         content_gen += 1
