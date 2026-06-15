@@ -51,10 +51,20 @@ class PosterConfig(AppConfig):
             threading.Thread(target=_start_lazy, daemon=True).start()
             return
 
-        # gunicorn/web process: NOT starting the scheduler here.
-        # The scheduler runs as a separate Render worker service
-        # via `python manage.py run_scheduler`.
-        # This prevents duplicate job execution and reduces memory.
+        # gunicorn/web process: check if we should run scheduler in web process
+        if os.environ.get('RUN_SCHEDULER_IN_WEB', 'False').lower() in ('true', '1', 'yes'):
+            import threading
+            def _start_lazy_web():
+                from .scheduler import start_scheduler
+                try:
+                    start_scheduler()
+                except Exception as e:
+                    logger.error(f"Failed to start scheduler in web process: {e}")
+            threading.Thread(target=_start_lazy_web, daemon=True).start()
+            logger.info("Scheduler started in background thread of web process (RUN_SCHEDULER_IN_WEB is enabled).")
+            return
+
+        # Otherwise, don't start the scheduler in the web process.
         logger.info(
             "Scheduler not started in web process. "
             "Run 'python manage.py run_scheduler' in a separate worker."
