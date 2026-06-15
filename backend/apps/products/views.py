@@ -1,17 +1,23 @@
 """
 Views for the products app.
 """
+import logging
+
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Q
 from .models import Product
 from .serializers import ProductListSerializer, ProductDetailSerializer
+from apps.poster.models import PostQueue
+
+logger = logging.getLogger(__name__)
 
 
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint for products.
+    Read-only by default. Use POST /api/products/create-sample/ to populate sample data.
     """
     queryset = Product.objects.all()
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -22,6 +28,38 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == 'list':
             return ProductListSerializer
         return ProductDetailSerializer
+
+    @action(detail=False, methods=['post'])
+    def create_sample(self, request):
+        """
+        POST /api/products/create-sample/
+        Creates sample fashion products and queues them for posting.
+        Safe: only creates predefined products, no user-supplied data.
+        """
+        from apps.dashboard.views import _create_sample_products
+        from apps.content.ai_generator import ContentGenerator
+
+        try:
+            created = _create_sample_products()
+        except Exception as e:
+            logger.error(f"Sample product creation failed: {e}")
+            return Response({'error': str(e)}, status=500)
+
+        content_gen = 0
+        if created > 0:
+            try:
+                generator = ContentGenerator()
+                result = generator.generate_batch(limit=10)
+                content_gen = result.get('generated', 0)
+            except Exception as e:
+                logger.error(f"Content generation after sample creation failed: {e}")
+
+        return Response({
+            'products_created': created,
+            'content_generated': content_gen,
+            'total_products': Product.objects.count(),
+            'total_queue': PostQueue.objects.count(),
+        })
 
     @action(detail=False)
     def trending(self, request):
