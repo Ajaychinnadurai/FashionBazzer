@@ -199,8 +199,6 @@ class SeedDataView(APIView):
             logger.error(f"Failed to start background pipeline: {e}")
 
         # Step 4: Get current counts
-        from apps.products.models import Product
-        from apps.poster.models import PostQueue
         results['products'] = Product.objects.count()
         results['total_products'] = results['products']
         results['total_queue'] = PostQueue.objects.count()
