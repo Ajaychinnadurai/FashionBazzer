@@ -149,48 +149,48 @@ class SeedDataView(APIView):
     """
     GET /api/dashboard/seed/
     Triggers the full data pipeline to populate the database with initial data.
-    Calls product scraping + AI content generation.
-    Falls back to sample products if scraping yields nothing.
     """
 
     def get(self, request):
         import logging
+        import threading
         logger = logging.getLogger(__name__)
         results = {'products': 0, 'content': 0, 'errors': []}
 
-        # Step 1: Scrape products from affiliate platforms
-        scraped_count = 0
-        try:
-            from apps.poster.scheduler import scrape_trending_products
-            scrape_result = scrape_trending_products()
-            # Sum the new/scraped products from each platform sub-result
-            for platform_key in ['meesho', 'amazon']:
-                platform_res = scrape_result.get(platform_key, {})
-                if isinstance(platform_res, dict):
-                    scraped_count += (
-                        platform_res.get('new_products', 0) or 
-                        platform_res.get('products_scraped', 0) or 
-                        0
-                    )
-            logger.info(f"Seed: scraped {scraped_count} products")
-        except Exception as e:
-            results['errors'].append(f'Scraping failed: {str(e)}')
-            logger.error(f"Seed scraping failed: {e}")
-
-        # Step 2: Fallback — create sample products if scraping returned nothing
-        results['products'] = scraped_count
-        if scraped_count == 0 and Product.objects.count() == 0:
-            logger.info("No products scraped. Falling back to sample products...")
+        # Step 1: Ensure we have at least sample products in the database instantly
+        # so the user has immediate visual feedback and we avoid Render request timeouts.
+        created_samples = 0
+        if Product.objects.count() == 0:
+            logger.info("Database empty. Pre-seeding sample products...")
             try:
-                sample_count = _create_sample_products()
-                results['products'] = sample_count
-                results['sample_fallback'] = sample_count
-                logger.info(f"Created {sample_count} sample products")
+                created_samples = _create_sample_products()
+                results['sample_fallback'] = created_samples
+                logger.info(f"Created {created_samples} sample products")
             except Exception as e:
                 results['errors'].append(f'Sample product creation failed: {str(e)}')
                 logger.error(f"Sample product creation failed: {e}")
 
-        # Step 3: Generate AI content for all unprocessed products
+        # Step 2: Trigger full scraping asynchronously in a background thread
+        # to prevent blocking the web request and triggering 504 Gateway Timeout.
+        def run_scraping_in_background():
+            from django.db import close_old_connections
+            try:
+                from apps.poster.scheduler import scrape_trending_products
+                scrape_trending_products()
+            except Exception as bg_e:
+                logger.error(f"Background scraping thread error: {bg_e}")
+            finally:
+                close_old_connections()
+
+        try:
+            threading.Thread(target=run_scraping_in_background, daemon=True).start()
+            logger.info("Scraping pipeline started in background thread.")
+        except Exception as e:
+            results['errors'].append(f'Failed to start background scraper: {str(e)}')
+            logger.error(f"Failed to start background scraper: {e}")
+
+        # Step 3: Generate AI content for the products synchronously
+        # so they are ready to post/view immediately.
         try:
             from apps.poster.scheduler import generate_content
             content_result = generate_content()
@@ -203,7 +203,8 @@ class SeedDataView(APIView):
         # Step 4: Get current counts
         from apps.products.models import Product
         from apps.poster.models import PostQueue
-        results['total_products'] = Product.objects.count()
+        results['products'] = Product.objects.count()
+        results['total_products'] = results['products']
         results['total_queue'] = PostQueue.objects.count()
 
         return Response(results)
