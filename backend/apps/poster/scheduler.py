@@ -40,18 +40,6 @@ def get_scheduler() -> BackgroundScheduler:
 
 
 
-def db_connection_cleanup(func):
-    """Decorator to ensure DB connections are closed before and after running a job."""
-    from django.db import close_old_connections
-    def wrapper(*args, **kwargs):
-        close_old_connections()
-        try:
-            return func(*args, **kwargs)
-        finally:
-            close_old_connections()
-    return wrapper
-
-
 def get_pending_posts_for_platform(platform_name: str, limit: int):
     """
     Get posts that are 'pending' but have NOT yet been successfully published to the specified platform.
@@ -106,7 +94,6 @@ def update_post_status(post):
 # ──────────────────────────────────────────
 # JOB 1: Scrape trending products (every 6h)
 # ──────────────────────────────────────────
-@db_connection_cleanup
 def scrape_trending_products():
     """Scrape all affiliate platforms for new trending products."""
     logger.info("Starting product scraping cycle...")
@@ -135,7 +122,6 @@ def scrape_trending_products():
 # ──────────────────────────────────────────
 # JOB 2: Generate AI content (every 2h)
 # ──────────────────────────────────────────
-@db_connection_cleanup
 def generate_content():
     """Generate AI captions and compose images for new products.
     Also recycles content for already-processed products if pending queue is low.
@@ -165,7 +151,6 @@ def generate_content():
 # ──────────────────────────────────────────
 # JOB 3: Post to Telegram (9x/day — peak hours)
 # ──────────────────────────────────────────
-@db_connection_cleanup
 def publish_to_telegram():
     """Post pending content to Telegram channel.
     Posts every 2 hours from 6AM to 10PM IST (9 posts/day).
@@ -203,7 +188,6 @@ def publish_to_telegram():
 # ──────────────────────────────────────────
 # JOB 4: Post to Instagram (3x/day)
 # ──────────────────────────────────────────
-@db_connection_cleanup
 def publish_to_instagram():
     """Post pending content to Instagram."""
     from .platforms.instagram_poster import InstagramPoster
@@ -219,7 +203,6 @@ def publish_to_instagram():
 # ──────────────────────────────────────────
 # JOB 5: Post to Facebook (3x/day)
 # ──────────────────────────────────────────
-@db_connection_cleanup
 def publish_to_facebook():
     """Post pending content to Facebook Page."""
     from .platforms.facebook_poster import FacebookPoster
@@ -235,7 +218,6 @@ def publish_to_facebook():
 # ──────────────────────────────────────────
 # JOB 6: Post to Pinterest (4x/day)
 # ──────────────────────────────────────────
-@db_connection_cleanup
 def publish_to_pinterest():
     """Create Pinterest pins from pending content."""
     from .platforms.pinterest_poster import PinterestPoster
@@ -251,7 +233,6 @@ def publish_to_pinterest():
 # ──────────────────────────────────────────
 # JOB 7: Post to Twitter/X (3x/day)
 # ──────────────────────────────────────────
-@db_connection_cleanup
 def publish_to_twitter():
     """Post tweets with product images."""
     from .platforms.twitter_poster import TwitterPoster
@@ -267,7 +248,6 @@ def publish_to_twitter():
 # ──────────────────────────────────────────
 # JOB 8: Post to Threads (2x/day)
 # ──────────────────────────────────────────
-@db_connection_cleanup
 def publish_to_threads():
     """Post content to Threads."""
     from .platforms.threads_poster import ThreadsPoster
@@ -283,7 +263,6 @@ def publish_to_threads():
 # ──────────────────────────────────────────
 # JOB 9: Content Recycle (6x/day)
 # ──────────────────────────────────────────
-@db_connection_cleanup
 def recycle_content():
     """
     Recycle content for products that have already been posted.
@@ -306,7 +285,6 @@ def recycle_content():
 # ──────────────────────────────────────────
 # JOB 10: Sync affiliate commissions (daily)
 # ──────────────────────────────────────────
-@db_connection_cleanup
 def sync_commissions():
     """Sync commission data from all affiliate platforms."""
     logger.info("Syncing affiliate commissions...")
@@ -320,7 +298,6 @@ def sync_commissions():
 # ──────────────────────────────────────────
 # JOB 11: Update platform status (every 30min)
 # ──────────────────────────────────────────
-@db_connection_cleanup
 def check_platform_connections():
     """Check and update connection status for all platforms."""
     from apps.tracker.models import PlatformConnection
@@ -422,6 +399,18 @@ def start_scheduler():
             replace_existing=True,
             misfire_grace_time=300,
         )
+
+    # Register connection cleanup event listener
+    from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
+    
+    def cleanup_db_connections(event):
+        from django.db import close_old_connections
+        try:
+            close_old_connections()
+        except Exception as e:
+            logger.error(f"Error in scheduler connection cleanup: {e}")
+            
+    scheduler.add_listener(cleanup_db_connections, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
     # Start the scheduler (no-op if already running)
     if not scheduler.running:
