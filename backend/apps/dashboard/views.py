@@ -170,35 +170,33 @@ class SeedDataView(APIView):
                 results['errors'].append(f'Sample product creation failed: {str(e)}')
                 logger.error(f"Sample product creation failed: {e}")
 
-        # Step 2: Trigger full scraping asynchronously in a background thread
-        # to prevent blocking the web request and triggering 504 Gateway Timeout.
-        def run_scraping_in_background():
+        # Step 2: Trigger scraping and content generation asynchronously in a background thread
+        # to prevent blocking the web request and triggering 504/client timeouts.
+        def run_pipeline_in_background():
             from django.db import close_old_connections
             try:
+                # 1. Scrape products
                 from apps.poster.scheduler import scrape_trending_products
+                logger.info("Background thread: starting product scraping...")
                 scrape_trending_products()
+                
+                # 2. Generate content
+                from apps.poster.scheduler import generate_content
+                logger.info("Background thread: starting content generation...")
+                generate_content()
+                
+                logger.info("Background thread: seeding pipeline complete.")
             except Exception as bg_e:
-                logger.error(f"Background scraping thread error: {bg_e}")
+                logger.error(f"Background pipeline thread error: {bg_e}")
             finally:
                 close_old_connections()
 
         try:
-            threading.Thread(target=run_scraping_in_background, daemon=True).start()
-            logger.info("Scraping pipeline started in background thread.")
+            threading.Thread(target=run_pipeline_in_background, daemon=True).start()
+            logger.info("Scraping & content generation pipeline started in background thread.")
         except Exception as e:
-            results['errors'].append(f'Failed to start background scraper: {str(e)}')
-            logger.error(f"Failed to start background scraper: {e}")
-
-        # Step 3: Generate AI content for the products synchronously
-        # so they are ready to post/view immediately.
-        try:
-            from apps.poster.scheduler import generate_content
-            content_result = generate_content()
-            results['content'] = content_result.get('generated', 0) + content_result.get('recycled', 0)
-            logger.info(f"Seed: generated {results['content']} content items")
-        except Exception as e:
-            results['errors'].append(f'Content generation failed: {str(e)}')
-            logger.error(f"Seed content generation failed: {e}")
+            results['errors'].append(f'Failed to start background pipeline: {str(e)}')
+            logger.error(f"Failed to start background pipeline: {e}")
 
         # Step 4: Get current counts
         from apps.products.models import Product
