@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   FiArrowRight, FiGrid, FiStar, FiSend, FiTrendingUp, FiBarChart2,
-  FiDollarSign, FiClock, FiShield, FiZap, FiRefreshCw, FiCheckCircle,
+  FiDollarSign, FiShield, FiZap, FiRefreshCw, FiCheckCircle,
 } from 'react-icons/fi';
 
 const FEATURES = [

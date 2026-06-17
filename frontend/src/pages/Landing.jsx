@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FiArrowRight, FiCheck, FiStar, FiTrendingUp, FiClock, FiSmartphone,
+  FiArrowRight, FiCheck, FiStar, FiTrendingUp, FiClock,
   FiShield, FiSend, FiBarChart2, FiGrid, FiDollarSign, FiMail,
   FiMessageCircle, FiInstagram, FiTwitter, FiFacebook, FiGithub,
-  FiChevronRight, FiPlay, FiBookOpen, FiZap, FiUsers, FiAward,
+  FiChevronRight, FiPlay, FiBookOpen, FiZap,
 } from 'react-icons/fi';
 
 /* ──────────────────────────────────────────────
@@ -411,15 +411,18 @@ function Footer() {
           </p>
           <div className="footer-social" style={{ display: 'flex', gap: 8, marginTop: 16 }}>
             {[
-              { icon: FiInstagram, href: '#' },
-              { icon: FiTwitter, href: '#' },
-              { icon: FiFacebook, href: '#' },
-              { icon: FiGithub, href: '#' },
-            ].map((Social, i) => (
-              <a key={i} href={Social.href} className="social-link" target="_blank" rel="noreferrer">
-                <Social.icon size={16} />
-              </a>
-            ))}
+              { Icon: FiInstagram, href: '#' },
+              { Icon: FiTwitter, href: '#' },
+              { Icon: FiFacebook, href: '#' },
+              { Icon: FiGithub, href: '#' },
+            ].map((social, i) => {
+              const Icon = social.Icon;
+              return (
+                <a key={i} href={social.href} className="social-link" target="_blank" rel="noreferrer">
+                  <Icon size={16} />
+                </a>
+              );
+            })}
           </div>
         </div>
 
@@ -435,8 +438,8 @@ function Footer() {
           <h4>Company</h4>
           <Link to="/about">About Us</Link>
           <Link to="/contact">Contact</Link>
-          <a href="#">Privacy Policy</a>
-          <a href="#">Terms of Service</a>
+          <Link to="/about">Privacy Policy</Link>
+          <Link to="/contact">Terms of Service</Link>
         </div>
 
         <div className="footer-links">
