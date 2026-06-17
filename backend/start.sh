@@ -38,4 +38,4 @@ exec gunicorn fashionbazzer.wsgi:application \
     --timeout 120 \
     --access-logfile - \
     --error-logfile - \
-    --log-level debug
+    --log-level info
