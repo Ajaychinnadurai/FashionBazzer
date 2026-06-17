@@ -36,6 +36,11 @@ DEBUG = config('DEBUG', default=True, cast=_parse_bool)
 
 ALLOWED_HOSTS = _parse_list(config('ALLOWED_HOSTS', default='localhost,127.0.0.1'))
 
+# Trust Render default host name if running in production on Render
+RENDER_EXTERNAL_HOSTNAME = config('RENDER_EXTERNAL_HOSTNAME', default='')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
 # Application definition
 
 INSTALLED_APPS = [

@@ -83,80 +83,115 @@ def random_hashtags(platform: str) -> str:
 
 
 # ──────────────────────────────────────────
-# TELEGRAM TEMPLATES (6 clean styles)
+# TELEGRAM TEMPLATES (8 varied, natural styles)
+# No two templates follow the same structure.
+# No spammy "buy now X% off link" text.
 # ──────────────────────────────────────────
 TELEGRAM_TEMPLATES = {
-    "style_pick": """✨ Selected Style Pick
+    "trending_now": """🔥 TRENDING NOW!
 
-🌸 Product: {product_name}
+👗 {product_name}
+💰 Just ₹{price} (was ₹{original_price}) — Save {discount}%!
+⭐ {rating}/5 · {reviews}+ Reviews ✨
+
 {ai_tagline}
 
-🛍️ Pricing details:
-• Original: ₹{original_price}
-• Deal Price: ₹{price} (Save {discount}%)
+🛒 Shop Now 👇
+{affiliate_link}
 
-💫 Upgrade your wardrobe today.
-👇 Shop link in the button below! buy now {discount}% off link : {affiliate_link}""",
+{hashtags}""",
 
-    "trending_pick": """🔥 Trending Pick of the Day
+    "main_character": """🌊 Your sign to grab this dress!
 
-👗 Product: {product_name}
+{product_name}
 {ai_tagline}
 
-💰 Pricing details:
-• Original Price: ₹{original_price}
-• Deal Price: ₹{price} (Save {discount}%)
+🤯 Only ₹{price} (Save ₹{save_amount}!) 🔥
 
-💫 Upgrade your wardrobe today.
-👇 Shop link in the button below! buy now {discount}% off link : {affiliate_link}""",
+💕 Trust us, your wardrobe needs this!
 
-    "budget_pick": """💎 Budget-Friendly Pick
+👇 {affiliate_link}
 
-🛍️ Product: {product_name}
+{hashtags}""",
+
+    "flash_deal": """⏰ While stocks last!
+
+{product_name}
+💥 ₹{price} — That's {discount}% OFF!
+
 {ai_tagline}
 
-📊 Pricing breakdown:
-• Original: ₹{original_price}
-• Deal Price: ₹{price} (Save {discount}%)
+⚠️ Only {stock_left} left!
 
-💫 Upgrade your wardrobe today.
-👇 Shop link in the button below! buy now {discount}% off link : {affiliate_link}""",
+🛒 Grab yours before it's gone:
+{affiliate_link}
 
-    "top_rated": """⭐ Top Rated Style Pick
+{hashtags}""",
 
-🌟 Product: {product_name}
+    "price_drop": """📉 Price Drop Alert!
+
+{product_name}
+⬇️ ₹{original_price} → ₹{price} (Save ₹{save_amount})
+
 {ai_tagline}
 
-🛍️ Pricing details:
-• Original: ₹{original_price}
-• Deal Price: ₹{price} (Save {discount}%)
+⭐ Rated {rating}/5 by {reviews} shoppers
 
-💫 Upgrade your wardrobe today.
-👇 Shop link in the button below! buy now {discount}% off link : {affiliate_link}""",
+👇 {affiliate_link}
 
-    "deal_alert": """💥 Hot Deal Alert!
+{hashtags}""",
 
-🎯 Product: {product_name}
+    "lifestyle_vibe": """💫 Your new obsession, coming right up!
+
+{product_name}
 {ai_tagline}
 
-🛍️ Pricing details:
-• Original: ₹{original_price}
-• Deal Price: ₹{price} (Save {discount}%)
+Perfect for: {season} ✨
 
-💫 Upgrade your wardrobe today.
-👇 Shop link in the button below! buy now {discount}% off link : {affiliate_link}""",
+💰 ₹{price} only (Save {discount}%)
 
-    "must_have": """💖 Must-Have Pick
+👇 Get it here:
+{affiliate_link}
 
-🌸 Product: {product_name}
+{hashtags}""",
+
+    "social_proof": """⭐ {reviews}+ people already love this!
+
+{product_name}
+⭐ {rating}/5 Stars
+₹{price} (was ₹{original_price})
+
 {ai_tagline}
 
-🛍️ Pricing details:
-• Original: ₹{original_price}
-• Deal Price: ₹{price} (Save {discount}%)
+Don't miss out 👇
+{affiliate_link}
 
-💫 Upgrade your wardrobe today.
-👇 Shop link in the button below! buy now {discount}% off link : {affiliate_link}""",
+{hashtags}""",
+
+    "viral_pick": """🎯 This one's going viral! 🔥
+
+{product_name}
+{ai_tagline}
+
+Category: {category}
+💰 ₹{price} · ⭐ {rating}/5
+
+👇 Shop now:
+{affiliate_link}
+
+{hashtags}""",
+
+    "simple_steal": """✨ Steal of the day!
+
+{product_name}
+{ai_tagline}
+
+₹{price} only (was ₹{original_price})
+Save {discount}% 🔥
+
+👇 {affiliate_link}
+
+{hashtags}""",
 }
 
 # ──────────────────────────────────────────

@@ -39,9 +39,74 @@ def get_scheduler() -> BackgroundScheduler:
     return _scheduler
 
 
+
+def db_connection_cleanup(func):
+    """Decorator to ensure DB connections are closed before and after running a job."""
+    from django.db import close_old_connections
+    def wrapper(*args, **kwargs):
+        close_old_connections()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            close_old_connections()
+    return wrapper
+
+
+def get_pending_posts_for_platform(platform_name: str, limit: int):
+    """
+    Get posts that are 'pending' but have NOT yet been successfully published to the specified platform.
+    """
+    from django.db.models import Exists, OuterRef
+    from .models import PostQueue, PostLog
+
+    # Check if a successful log exists for this post and platform
+    already_posted = PostLog.objects.filter(
+        post=OuterRef('pk'),
+        platform=platform_name,
+        status='success'
+    )
+
+    # Get pending posts that do not have a successful log for this platform
+    return PostQueue.objects.filter(
+        status='pending'
+    ).annotate(
+        already_sent=Exists(already_posted)
+    ).filter(
+        already_sent=False
+    ).order_by('-created_at')[:limit]
+
+
+def update_post_status(post):
+    """
+    Check if a post has been processed on all active platforms,
+    and update its status accordingly.
+    """
+    from apps.tracker.models import PlatformConnection
+    from .models import PostLog
+
+    active_platforms = set(
+        PlatformConnection.objects.filter(is_connected=True).values_list('platform', flat=True)
+    )
+
+    # If no platforms are configured/connected, default to telegram to avoid getting stuck
+    if not active_platforms:
+        active_platforms = {'telegram'}
+
+    successful_platforms = set(
+        PostLog.objects.filter(post=post, status='success').values_list('platform', flat=True)
+    )
+
+    # If the post has been successfully posted to all active platforms, mark it as published
+    if active_platforms.issubset(successful_platforms):
+        post.status = 'published'
+        post.published_at = timezone.now()
+        post.save(update_fields=['status', 'published_at'])
+
+
 # ──────────────────────────────────────────
 # JOB 1: Scrape trending products (every 6h)
 # ──────────────────────────────────────────
+@db_connection_cleanup
 def scrape_trending_products():
     """Scrape all affiliate platforms for new trending products."""
     logger.info("Starting product scraping cycle...")
@@ -70,6 +135,7 @@ def scrape_trending_products():
 # ──────────────────────────────────────────
 # JOB 2: Generate AI content (every 2h)
 # ──────────────────────────────────────────
+@db_connection_cleanup
 def generate_content():
     """Generate AI captions and compose images for new products.
     Also recycles content for already-processed products if pending queue is low.
@@ -99,30 +165,29 @@ def generate_content():
 # ──────────────────────────────────────────
 # JOB 3: Post to Telegram (9x/day — peak hours)
 # ──────────────────────────────────────────
+@db_connection_cleanup
 def publish_to_telegram():
     """Post pending content to Telegram channel.
     Posts every 2 hours from 6AM to 10PM IST (9 posts/day).
     If queue is low, auto-triggers content generation.
     """
     logger.info("Publishing to Telegram...")
-    from .models import PostQueue
     from .platforms.telegram_poster import TelegramPoster
 
-    posts = PostQueue.objects.filter(status='pending').order_by('-created_at')[:5]
+    posts = get_pending_posts_for_platform('telegram', limit=5)
     poster = TelegramPoster()
 
     published = 0
     for post in posts:
         success = poster.send(post)
         if success:
-            post.status = 'published'
-            post.published_at = timezone.now()
-            post.save()
             published += 1
+            update_post_status(post)
 
     logger.info(f"Published {published}/{len(posts)} posts to Telegram")
 
     # Auto-top-up: if queue is running low, trigger content generation
+    from .models import PostQueue
     remaining = PostQueue.objects.filter(status='pending').count()
     if remaining < 10:
         logger.info(f"Low pending queue ({remaining}), auto-triggering content generation...")
@@ -138,80 +203,87 @@ def publish_to_telegram():
 # ──────────────────────────────────────────
 # JOB 4: Post to Instagram (3x/day)
 # ──────────────────────────────────────────
+@db_connection_cleanup
 def publish_to_instagram():
     """Post pending content to Instagram."""
-    from .models import PostQueue
     from .platforms.instagram_poster import InstagramPoster
 
-    posts = PostQueue.objects.filter(status='pending').order_by('-created_at')[:3]
+    posts = get_pending_posts_for_platform('instagram', limit=3)
     poster = InstagramPoster()
     for post in posts:
         success = poster.send(post)
         if success:
-            post.status = 'published'
-            post.published_at = timezone.now()
-            post.save()
+            update_post_status(post)
 
 
 # ──────────────────────────────────────────
 # JOB 5: Post to Facebook (3x/day)
 # ──────────────────────────────────────────
+@db_connection_cleanup
 def publish_to_facebook():
     """Post pending content to Facebook Page."""
-    from .models import PostQueue
     from .platforms.facebook_poster import FacebookPoster
 
-    posts = PostQueue.objects.filter(status='pending').order_by('-created_at')[:3]
+    posts = get_pending_posts_for_platform('facebook', limit=3)
     poster = FacebookPoster()
     for post in posts:
-        poster.send(post)
+        success = poster.send(post)
+        if success:
+            update_post_status(post)
 
 
 # ──────────────────────────────────────────
 # JOB 6: Post to Pinterest (4x/day)
 # ──────────────────────────────────────────
+@db_connection_cleanup
 def publish_to_pinterest():
     """Create Pinterest pins from pending content."""
-    from .models import PostQueue
     from .platforms.pinterest_poster import PinterestPoster
 
-    posts = PostQueue.objects.filter(status='pending').order_by('-created_at')[:4]
+    posts = get_pending_posts_for_platform('pinterest', limit=4)
     poster = PinterestPoster()
     for post in posts:
-        poster.send(post)
+        success = poster.send(post)
+        if success:
+            update_post_status(post)
 
 
 # ──────────────────────────────────────────
 # JOB 7: Post to Twitter/X (3x/day)
 # ──────────────────────────────────────────
+@db_connection_cleanup
 def publish_to_twitter():
     """Post tweets with product images."""
-    from .models import PostQueue
     from .platforms.twitter_poster import TwitterPoster
 
-    posts = PostQueue.objects.filter(status='pending').order_by('-created_at')[:3]
+    posts = get_pending_posts_for_platform('twitter', limit=3)
     poster = TwitterPoster()
     for post in posts:
-        poster.send(post)
+        success = poster.send(post)
+        if success:
+            update_post_status(post)
 
 
 # ──────────────────────────────────────────
 # JOB 8: Post to Threads (2x/day)
 # ──────────────────────────────────────────
+@db_connection_cleanup
 def publish_to_threads():
     """Post content to Threads."""
-    from .models import PostQueue
     from .platforms.threads_poster import ThreadsPoster
 
-    posts = PostQueue.objects.filter(status='pending').order_by('-created_at')[:2]
+    posts = get_pending_posts_for_platform('threads', limit=2)
     poster = ThreadsPoster()
     for post in posts:
-        poster.send(post)
+        success = poster.send(post)
+        if success:
+            update_post_status(post)
 
 
 # ──────────────────────────────────────────
 # JOB 9: Content Recycle (6x/day)
 # ──────────────────────────────────────────
+@db_connection_cleanup
 def recycle_content():
     """
     Recycle content for products that have already been posted.
@@ -234,6 +306,7 @@ def recycle_content():
 # ──────────────────────────────────────────
 # JOB 10: Sync affiliate commissions (daily)
 # ──────────────────────────────────────────
+@db_connection_cleanup
 def sync_commissions():
     """Sync commission data from all affiliate platforms."""
     logger.info("Syncing affiliate commissions...")
@@ -247,6 +320,7 @@ def sync_commissions():
 # ──────────────────────────────────────────
 # JOB 11: Update platform status (every 30min)
 # ──────────────────────────────────────────
+@db_connection_cleanup
 def check_platform_connections():
     """Check and update connection status for all platforms."""
     from apps.tracker.models import PlatformConnection
@@ -385,27 +459,56 @@ def publish_post_to_all(post_obj) -> bool:
     from .platforms.twitter_poster import TwitterPoster
     from .platforms.threads_poster import ThreadsPoster
 
-    success = True
     posters = [
-        TelegramPoster(),
-        InstagramPoster(),
-        FacebookPoster(),
-        PinterestPoster(),
-        TwitterPoster(),
-        ThreadsPoster(),
+        ('telegram', TelegramPoster()),
+        ('instagram', InstagramPoster()),
+        ('facebook', FacebookPoster()),
+        ('pinterest', PinterestPoster()),
+        ('twitter', TwitterPoster()),
+        ('threads', ThreadsPoster()),
     ]
 
-    for poster in posters:
-        try:
-            if not poster.send(post_obj):
-                success = False
-        except Exception as e:
-            logger.error(f"Publishing failed: {e}")
-            success = False
+    attempted = 0
+    succeeded = 0
 
-    if success:
+    for name, poster in posters:
+        # Check if platform is configured
+        is_configured = False
+        if name == 'telegram':
+            is_configured = bool(poster.bot_token and poster.channel_id)
+        elif name == 'instagram':
+            is_configured = bool(poster.access_token and poster.ig_user_id)
+        elif name == 'facebook':
+            is_configured = bool(poster.access_token and poster.page_id)
+        elif name == 'pinterest':
+            is_configured = bool(poster.access_token and (poster._board_name or poster._board_id))
+        elif name == 'twitter':
+            is_configured = poster.client is not None
+        elif name == 'threads':
+            is_configured = bool(poster.access_token and poster.ig_user_id)
+
+        if not is_configured:
+            logger.info(f"Skipping unconfigured platform for manual publish: {name}")
+            continue
+
+        attempted += 1
+        try:
+            if poster.send(post_obj):
+                succeeded += 1
+            else:
+                logger.warning(f"Manual post to {name} returned False")
+        except Exception as e:
+            logger.error(f"Manual posting failed for {name}: {e}")
+
+    # Mark as published if at least one attempt succeeded,
+    # or if no platforms are configured (to avoid posts getting stuck forever)
+    if succeeded > 0 or attempted == 0:
         post_obj.status = 'published'
         post_obj.published_at = timezone.now()
         post_obj.save()
+        return True
+    
+    post_obj.status = 'failed'
+    post_obj.save()
+    return False
 
-    return success

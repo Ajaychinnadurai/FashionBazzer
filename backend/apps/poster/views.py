@@ -24,7 +24,10 @@ class GenerateContentAPIView(APIView):
             generator = ContentGenerator()
             product_id = serializer.validated_data['product_id']
             result = generator.generate_for_product(product_id)
-            return Response(result, status=status.HTTP_201_CREATED)
+            if result:
+                response_serializer = PostQueueSerializer(result)
+                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+            return Response({'error': 'Failed to generate content'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

@@ -160,6 +160,19 @@ class ContentGenerator:
         # Step 4: Compose image with overlays
         image_path = self.compose_image(product, context)
 
+        # Construct public image URL from local image path for Meta / Pinterest
+        public_image_url = ''
+        if image_path:
+            import os
+            try:
+                # Get the relative path from BASE_DIR (e.g. "media/composed_posts/post_1_1234.jpg")
+                rel_path = os.path.relpath(image_path, settings.BASE_DIR).replace('\\', '/')
+                # REDIRECT_BASE_URL is like "https://fashionbazzer-backend.onrender.com/r/"
+                base_url = settings.REDIRECT_BASE_URL.split('/r/')[0]
+                public_image_url = f"{base_url}/{rel_path}"
+            except Exception as e:
+                logger.error(f"Failed to resolve public image URL: {e}")
+
         # Step 5: Create PostQueue entry
         post = PostQueue.objects.create(
             product=product,
@@ -170,6 +183,7 @@ class ContentGenerator:
             twitter_caption=captions.get('twitter_caption', ''),
             threads_caption=captions.get('threads_caption', ''),
             image_path=image_path or '',
+            public_image_url=public_image_url,
             caption_style=style,
             scheduled_time=timezone.now(),
             status='pending',

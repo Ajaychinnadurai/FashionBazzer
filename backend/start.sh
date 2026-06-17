@@ -23,6 +23,10 @@ echo "--- Django system check ---"
 python manage.py check --deploy 2>&1 || echo "(Django check produced warnings — continuing)"
 echo "Django check: OK"
 
+# Run migrations before Gunicorn starts
+echo "--- Running migrations ---"
+python manage.py migrate --noinput
+
 # Verify gunicorn is available
 echo "--- Gunicorn check ---"
 python -c "import gunicorn; print(f'gunicorn {gunicorn.__version__}')" 2>&1

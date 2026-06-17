@@ -100,6 +100,6 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False)
     def recent(self, request):
         """Return most recently scraped products."""
-        recent = Product.objects.all()[:20]
+        recent = Product.objects.all().order_by('-created_at')[:20]
         serializer = ProductListSerializer(recent, many=True)
         return Response(serializer.data)

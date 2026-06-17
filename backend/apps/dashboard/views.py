@@ -163,7 +163,15 @@ class SeedDataView(APIView):
         try:
             from apps.poster.scheduler import scrape_trending_products
             scrape_result = scrape_trending_products()
-            scraped_count = scrape_result.get('new_products', 0) or scrape_result.get('products_scraped', 0)
+            # Sum the new/scraped products from each platform sub-result
+            for platform_key in ['meesho', 'amazon']:
+                platform_res = scrape_result.get(platform_key, {})
+                if isinstance(platform_res, dict):
+                    scraped_count += (
+                        platform_res.get('new_products', 0) or 
+                        platform_res.get('products_scraped', 0) or 
+                        0
+                    )
             logger.info(f"Seed: scraped {scraped_count} products")
         except Exception as e:
             results['errors'].append(f'Scraping failed: {str(e)}')
