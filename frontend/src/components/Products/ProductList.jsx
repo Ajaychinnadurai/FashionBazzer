@@ -10,6 +10,7 @@ export default function ProductList({ currentPage = 'all' }) {
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState('');
   const [platformFilter, setPlatformFilter] = React.useState('all');
+  const [seedLoading, setSeedLoading] = React.useState(false);
 
   React.useEffect(() => {
     fetchProducts();
@@ -29,6 +30,21 @@ export default function ProductList({ currentPage = 'all' }) {
       setProducts([]);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSeedPipeline() {
+    try {
+      setSeedLoading(true);
+      toast.loading('Seeding database... This may take up to a minute.', { id: 'seed' });
+      await api.get('/dashboard/seed/');
+      toast.success('Database seeded successfully! 🎉', { id: 'seed' });
+      fetchProducts();
+    } catch (err) {
+      console.error('Seed error:', err);
+      toast.error('Failed to seed database. Check server logs.', { id: 'seed' });
+    } finally {
+      setSeedLoading(false);
     }
   }
 
@@ -115,11 +131,25 @@ export default function ProductList({ currentPage = 'all' }) {
       </div>
 
       {/* Product Grid */}
-      {filteredProducts.length === 0 ? (
+      {products.length === 0 ? (
+        <div className="empty-state">
+          <div className="emoji">📦</div>
+          <h3>No products in database</h3>
+          <p>The database is currently empty. Run the seed pipeline to scrape products and generate AI content.</p>
+          <button
+            className="btn btn-primary"
+            style={{ marginTop: 16 }}
+            onClick={handleSeedPipeline}
+            disabled={seedLoading}
+          >
+            {seedLoading ? 'Seeding Database...' : 'Run Seed Pipeline'}
+          </button>
+        </div>
+      ) : filteredProducts.length === 0 ? (
         <div className="empty-state">
           <div className="emoji">🔍</div>
           <h3>No products found</h3>
-          <p>Try adjusting your filters or wait for the next product scrape cycle.</p>
+          <p>Try adjusting your filters or search terms.</p>
         </div>
       ) : (
         <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
