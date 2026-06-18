@@ -77,9 +77,165 @@
   line-height: 1;
 }
 
+/* ─── Live Indicator ─── */
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--success);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+  animation: pulse 2s infinite;
+}
+
+/* ─── Spinning refresh icon ─── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ─── Stats Card Enhancements ─── */
+.stats-card:hover .stats-glow {
+  transform: scale(1.5);
+}
+
+.stats-card:hover .stats-icon-box {
+  transform: scale(1.1);
+}
+
+.stats-card:hover .stats-value {
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stats-change-badge {
+  transition: all 0.3s ease;
+}
+
+.stats-card:hover .stats-change-badge {
+  transform: scale(1.05);
+}
+
+/* ─── Platform Status Grid ─── */
+.platform-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  padding: 0 24px;
+}
+
+.platform-card {
+  padding: 20px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.platform-card.connected {
+  border-color: rgba(0, 212, 170, 0.15);
+}
+
+.platform-card.disconnected {
+  border-color: rgba(255, 71, 87, 0.1);
+}
+
+.platform-card:hover {
+  transform: translateY(-4px);
+}
+
+.platform-status-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  transition: all 0.5s ease;
+}
+
+.platform-status-bar.connected {
+  background: linear-gradient(90deg, var(--success), #00E6BB);
+  box-shadow: 0 0 12px rgba(0, 212, 170, 0.3);
+}
+
+.platform-status-bar.disconnected {
+  background: linear-gradient(90deg, var(--error), #FF6B7A);
+}
+
+/* ─── Activity Feed ─── */
+.activity-feed {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.activity-feed::-webkit-scrollbar {
+  width: 4px;
+}
+
+.activity-item {
+  transition: all 0.3s ease;
+}
+
+.activity-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+  margin: 0 -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+  border-radius: 8px;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ─── Updated stat animation ─── */
+.stat-update-enter {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.stat-update-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.3s ease;
+}
+
 @media (max-width: 768px) {
   .main-content {
     margin-left: 0;
     padding-bottom: 80px;
+  }
+
+  .platform-status-grid {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .platform-card {
+    padding: 16px;
   }
 }

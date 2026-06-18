@@ -62,6 +62,8 @@ services:
         sync: false
       - key: MEESHO_AFFILIATE_ID
         sync: false
+      - key: FLIPKART_AFFILIATE_ID
+        sync: false
       - key: CUELINKS_ID
         sync: false
       - key: REDIRECT_BASE_URL

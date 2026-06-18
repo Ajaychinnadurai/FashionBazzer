@@ -6,6 +6,7 @@ and Pillow for image composition.
 """
 import logging
 import random
+import time
 import requests
 from typing import Dict, Optional
 from decimal import Decimal
@@ -109,6 +110,8 @@ class ContentGenerator:
         Returns:
             PostQueue instance or None on failure.
         """
+        _start_time = time.time()
+
         if isinstance(product, int):
             try:
                 product = Product.objects.get(id=product)
@@ -167,8 +170,16 @@ class ContentGenerator:
             try:
                 # Get the relative path from BASE_DIR (e.g. "media/composed_posts/post_1_1234.jpg")
                 rel_path = os.path.relpath(image_path, settings.BASE_DIR).replace('\\', '/')
-                # REDIRECT_BASE_URL is like "https://fashionbazzer-backend.onrender.com/r/"
-                base_url = settings.REDIRECT_BASE_URL.split('/r/')[0]
+                # Get the base domain from REDIRECT_BASE_URL, removing any path suffix
+                raw_base = settings.REDIRECT_BASE_URL
+                # REDIRECT_BASE_URL is like "https://fashionbazzer-backend.onrender.com/r/" or "http://localhost:8000/r/"
+                # Strip trailing /r/ or /r to get the base domain
+                if '/r/' in raw_base:
+                    base_url = raw_base.split('/r/')[0]
+                elif raw_base.endswith('/r'):
+                    base_url = raw_base[:-2]
+                else:
+                    base_url = raw_base.rstrip('/')
                 public_image_url = f"{base_url}/{rel_path}"
             except Exception as e:
                 logger.error(f"Failed to resolve public image URL: {e}")
@@ -189,6 +200,9 @@ class ContentGenerator:
             status='pending',
         )
 
+        # Measure duration
+        duration_ms = int((time.time() - _start_time) * 1000)
+
         # Log generation
         GenerationLog.objects.create(
             product=product,
@@ -196,11 +210,11 @@ class ContentGenerator:
             prompt_tokens=len(tagline),
             generated_captions=captions,
             image_composed=bool(image_path),
-            duration_ms=0,
+            duration_ms=duration_ms,
             success=True,
         )
 
-        logger.info(f"Generated content for product #{product.id}: {product.name[:40]}")
+        logger.info(f"Generated content for product #{product.id}: {product.name[:40]} ({duration_ms}ms)")
         return post
 
     def generate_caption(self, product, platform: str, context: Dict) -> str:
@@ -374,11 +388,13 @@ class ContentGenerator:
                 img = img_rgba.convert('RGB')
 
             # ── Shadow gradient at bottom (for text legibility) ──
+            # Gradient goes from transparent at top to dark at bottom
             img_rgba = img.convert('RGBA')
             overlay = Image.new('RGBA', (1080, 1080), (0, 0, 0, 0))
             overlay_draw = ImageDraw.Draw(overlay)
             for y in range(560, 1080):
-                alpha = int(200 * (1 - (y - 560) / 520))
+                # Alpha increases from 0 at y=560 to 200 at y=1080
+                alpha = int(200 * ((y - 560) / 520))
                 overlay_draw.line([(0, y), (1080, y)], fill=(0, 0, 0, alpha))
             img = Image.alpha_composite(img_rgba, overlay)
             draw = ImageDraw.Draw(img)

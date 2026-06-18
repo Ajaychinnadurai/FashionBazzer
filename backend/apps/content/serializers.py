@@ -3,6 +3,7 @@ Serializers for content/poster app.
 """
 from rest_framework import serializers
 from apps.poster.models import PostQueue, PostLog
+from .models import GenerationLog
 
 
 class PostQueueSerializer(serializers.ModelSerializer):
@@ -21,6 +22,15 @@ class PostQueueCreateSerializer(serializers.Serializer):
             'telegram', 'instagram', 'facebook', 'pinterest', 'twitter'
         ]
     )
+
+
+class GenerationLogSerializer(serializers.ModelSerializer):
+    """Serializer for AI generation logs."""
+    product_name = serializers.CharField(source='product.name', read_only=True)
+
+    class Meta:
+        model = GenerationLog
+        fields = '__all__'
 
 
 class PostLogSerializer(serializers.ModelSerializer):

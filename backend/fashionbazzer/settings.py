@@ -29,10 +29,27 @@ def _parse_list(value):
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production')
+SECRET_KEY = config('SECRET_KEY', default='')
+
+# If SECRET_KEY is empty (no env var set), generate one for dev
+if not SECRET_KEY:
+    SECRET_KEY = 'django-insecure-dev-key-change-in-production'
+    import warnings
+    warnings.warn(
+        "SECRET_KEY env var not set! Using INSECURE dev key. "
+        "Set SECRET_KEY in your environment for production.",
+        RuntimeWarning,
+    )
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=_parse_bool)
+
+# Production guard: refuse to run with dev key in non-debug mode
+if not DEBUG and SECRET_KEY == 'django-insecure-dev-key-change-in-production':
+    raise RuntimeError(
+        "CRITICAL: SECRET_KEY is set to the insecure default! "
+        "Set the SECRET_KEY environment variable before deploying."
+    )
 
 ALLOWED_HOSTS = _parse_list(config('ALLOWED_HOSTS', default='localhost,127.0.0.1'))
 
@@ -185,7 +202,7 @@ SCHEDULER_AUTOSTART = True
 # Affiliate
 AMAZON_ASSOCIATE_ID = config('AMAZON_ASSOCIATE_ID', default='')
 MEESHO_AFFILIATE_ID = config('MEESHO_AFFILIATE_ID', default='')
-CUELINKS_ID = config('CUELINKS_ID', default='')
+FLIPKART_AFFILIATE_ID = config('FLIPKART_AFFILIATE_ID', default='fashionbazzer')
 
 # Telegram
 TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN', default='')
@@ -201,7 +218,7 @@ INSTAGRAM_USER_ID = config('INSTAGRAM_USER_ID', default='')
 # Pinterest
 PINTEREST_ACCESS_TOKEN = config('PINTEREST_ACCESS_TOKEN', default='')
 PINTEREST_BOARD_ID = config('PINTEREST_BOARD_ID', default='')
-PINTEREST_BOARD_NAME = config('PINTEREST_BOARD_NAME', default='fashion-brazzer')
+PINTEREST_BOARD_NAME = config('PINTEREST_BOARD_NAME', default='fashion-bazzer')
 
 # Twitter/X
 TWITTER_API_KEY = config('TWITTER_API_KEY', default='')
@@ -211,12 +228,6 @@ TWITTER_ACCESS_SECRET = config('TWITTER_ACCESS_SECRET', default='')
 
 # AI
 HUGGINGFACE_API_KEY = config('HUGGINGFACE_API_KEY', default='')
-
-# Cloudinary (for public image URLs)
-CLOUDINARY_URL = config('CLOUDINARY_URL', default='')
-
-# remove.bg
-REMOVEBG_API_KEY = config('REMOVEBG_API_KEY', default='')
 
 # Redirect base URL for tracked links
 REDIRECT_BASE_URL = config('REDIRECT_BASE_URL', default='http://localhost:8000/r/')

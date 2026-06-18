@@ -40,7 +40,7 @@ class TelegramPoster:
                     files={'photo': photo},
                     data={
                         'chat_id': self.channel_id,
-                        'caption': post_obj.telegram_caption[:1024],
+                        'caption': post_obj.telegram_caption[:4096],
                         'parse_mode': 'HTML',
                     },
                     timeout=30,

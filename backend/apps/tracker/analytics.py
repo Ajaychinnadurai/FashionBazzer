@@ -53,6 +53,10 @@ class AnalyticsEngine:
             is_connected=True
         ).count()
 
+        conversion_rate = 0.0
+        if total_clicks > 0:
+            conversion_rate = round((total_conversions / total_clicks) * 100, 2)
+
         return {
             'total_clicks': total_clicks,
             'total_earnings': total_earnings,
@@ -62,6 +66,7 @@ class AnalyticsEngine:
             'today_clicks': today_clicks,
             'today_earnings': today_earnings,
             'active_platforms': active_platforms,
+            'conversion_rate': conversion_rate,
         }
 
     @staticmethod

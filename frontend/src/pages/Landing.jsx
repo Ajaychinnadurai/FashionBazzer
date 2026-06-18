@@ -1,11 +1,73 @@
-import React from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FiArrowRight, FiCheck, FiStar, FiTrendingUp, FiClock,
   FiShield, FiSend, FiBarChart2, FiGrid, FiDollarSign, FiMail,
   FiMessageCircle, FiInstagram, FiTwitter, FiFacebook, FiGithub,
-  FiChevronRight, FiPlay, FiBookOpen, FiZap,
+  FiChevronRight, FiPlay, FiBookOpen, FiZap, FiChevronLeft,
 } from 'react-icons/fi';
+
+/* ──────────────────────────────────────────────
+   HOOKS
+   ────────────────────────────────────────────── */
+
+function useScrollReveal() {
+  const ref = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(el);
+        }
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, isVisible];
+}
+
+function AnimatedCounter({ value, suffix = '', duration = 2000 }) {
+  const [ref, isVisible] = useScrollReveal();
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    let startTime = null;
+    const target = parseInt(value.replace(/[^0-9]/g, ''));
+    const animate = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      setCount(Math.floor(eased * target));
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [isVisible, value, duration]);
+
+  return <span ref={ref}>{count}{suffix}</span>;
+}
+
+function RevealSection({ children, className = '', style = {} }) {
+  const [ref, isVisible] = useScrollReveal();
+  return (
+    <div
+      ref={ref}
+      className={`reveal-section ${isVisible ? 'visible' : ''} ${className}`}
+      style={style}
+    >
+      {children}
+    </div>
+  );
+}
 
 /* ──────────────────────────────────────────────
    SECTION COMPONENTS
@@ -305,6 +367,186 @@ function PricingSection() {
   );
 }
 
+/* ── Animated Stats Counter ── */
+function StatsCounterSection() {
+  return (
+    <RevealSection className="landing-section landing-section-alt" style={{ textAlign: 'center' }}>
+      <div className="section-label">Real Results</div>
+      <h2 className="section-heading">Trusted by Affiliate Marketers</h2>
+      <p className="section-desc" style={{ margin: '0 auto 48px' }}>
+        FashionBazzer powers thousands of automated posts every month.
+      </p>
+
+      <div className="counter-grid">
+        {[
+          { icon: '📤', value: '18,500+', suffix: '', label: 'Posts Published' },
+          { icon: '👆', value: '42,000+', suffix: '', label: 'Clicks Generated' },
+          { icon: '💰', value: '₹2.8L+', suffix: '', label: 'Commissions Earned' },
+          { icon: '⏰', value: '5,000+', suffix: 'hrs', label: 'Hours Saved' },
+        ].map((stat, i) => (
+          <div key={i} className="counter-item">
+            <div className="counter-icon">{stat.icon}</div>
+            <div className="counter-value">
+              <AnimatedCounter value={stat.value} suffix={stat.suffix} />
+            </div>
+            <div className="counter-label">{stat.label}</div>
+          </div>
+        ))}
+      </div>
+    </RevealSection>
+  );
+}
+
+/* ── Testimonials ── */
+function TestimonialsSection() {
+  const [active, setActive] = useState(0);
+  const testimonials = [
+    {
+      quote: "I was spending 3 hours a day posting dresses to my Telegram channel. FashionBazzer does it all — I just check the dashboard once a week. My earnings actually went up because it posts more consistently than I ever did.",
+      name: 'Priya S.',
+      role: 'Fashion Affiliate, Mumbai',
+      rating: 5,
+      avatar: '👩‍💼',
+    },
+    {
+      quote: "The AI captions are surprisingly good! My Instagram engagement went up 40% because the posts are actually trendy and use Gen Z lingo. The auto-scheduling is a lifesaver.",
+      name: 'Arjun K.',
+      role: 'Fashion Blogger, Delhi',
+      rating: 5,
+      avatar: '👨‍💼',
+    },
+    {
+      quote: "I tried doing this manually with other tools — nothing compares. 6 platforms, 24 posts a day, zero work. The Pinterest pins alone bring me 500+ monthly views. Absolute game changer.",
+      name: 'Neha R.',
+      role: 'Affiliate Marketer, Bangalore',
+      rating: 5,
+      avatar: '👩‍💻',
+    },
+    {
+      quote: "Setup took 15 minutes. Connected my Amazon tag, added my Telegram bot, and it just works. The first week I made ₹2,800 in commissions. I tell every affiliate I know to use this.",
+      name: 'Rahul M.',
+      role: 'E-commerce Seller, Jaipur',
+      rating: 5,
+      avatar: '👨‍🎤',
+    },
+  ];
+
+  const len = testimonials.length;
+  const prev = useCallback(() => setActive((a) => (a === 0 ? len - 1 : a - 1)), [len]);
+  const next = useCallback(() => setActive((a) => (a === len - 1 ? 0 : a + 1)), [len]);
+
+  // Auto-rotate
+  useEffect(() => {
+    const timer = setInterval(next, 6000);
+    return () => clearInterval(timer);
+  }, [next]);
+
+  const t = testimonials[active];
+
+  return (
+    <RevealSection className="landing-section">
+      <div className="section-label">What Users Say</div>
+      <h2 className="section-heading">Loved by Affiliates</h2>
+      <p className="section-desc">Join 500+ marketers automating their fashion affiliate income.</p>
+
+      <div className="testimonial-card glass-card">
+        <span className="testimonial-quote-icon" style={{ fontSize: 40, opacity: 0.1, position: 'absolute', top: 20, left: 24 }}>"."</span>
+        <div className="testimonial-avatar">{t.avatar}</div>
+        <div className="testimonial-stars">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <FiStar key={i} size={18} fill={i < t.rating ? '#FFB800' : 'none'} color="#FFB800" />
+          ))}
+        </div>
+        <p className="testimonial-text">"{t.quote}"</p>
+        <div className="testimonial-author">
+          <strong>{t.name}</strong>
+          <span>{t.role}</span>
+        </div>
+
+        <div className="testimonial-nav">
+          <button onClick={prev} className="testimonial-nav-btn">
+            <FiChevronLeft size={20} />
+          </button>
+          <div className="testimonial-dots">
+            {testimonials.map((_, i) => (
+              <button
+                key={i}
+                className={`dot ${i === active ? 'active' : ''}`}
+                onClick={() => setActive(i)}
+              />
+            ))}
+          </div>
+          <button onClick={next} className="testimonial-nav-btn">
+            <FiChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+    </RevealSection>
+  );
+}
+
+/* ── Trusted By / Partners ── */
+function TrustedBySection() {
+  return (
+    <RevealSection className="landing-section">
+      <div style={{ textAlign: 'center' }}>
+        <div className="section-label" style={{ marginBottom: 24 }}>Trusted Integrations</div>
+        <div className="trusted-grid">
+          {[
+            { icon: '🛒', name: 'Amazon India' },
+            { icon: '🛍️', name: 'Meesho' },
+            { icon: '📦', name: 'Flipkart' },
+            { icon: '✈️', name: 'Telegram' },
+            { icon: '📸', name: 'Instagram' },
+            { icon: '👍', name: 'Facebook' },
+            { icon: '📌', name: 'Pinterest' },
+            { icon: '🐦', name: 'Twitter / X' },
+            { icon: '🧵', name: 'Threads' },
+            { icon: '🤖', name: 'HuggingFace AI' },
+            { icon: '💳', name: 'Stripe' },
+            { icon: '☁️', name: 'Render Cloud' },
+          ].map((partner, i) => (
+            <div key={i} className="trusted-item">
+              <span className="trusted-icon">{partner.icon}</span>
+              <span className="trusted-name">{partner.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </RevealSection>
+  );
+}
+
+/* ── Final CTA ── */
+function CTASection() {
+  return (
+    <RevealSection className="landing-section">
+      <div className="cta-card">
+        <div className="cta-bg-glow" />
+        <div className="cta-content">
+          <h2>Ready to Automate Your
+            <br /><span className="gradient-text">Affiliate Income?</span>
+          </h2>
+          <p>Join 500+ affiliates who never manually post again. 24+ daily posts. 6 platforms. ₹0 setup.</p>
+          <div className="hero-cta" style={{ marginTop: 28 }}>
+            <Link to="/dashboard" className="btn btn-primary btn-lg">
+              Launch Dashboard <FiArrowRight size={18} />
+            </Link>
+            <Link to="/how-it-works" className="btn btn-secondary btn-lg">
+              <FiBookOpen size={16} /> See How It Works
+            </Link>
+          </div>
+          <div className="cta-meta">
+            <span><FiCheck size={14} /> No credit card required</span>
+            <span><FiCheck size={14} /> Setup in 15 minutes</span>
+            <span><FiCheck size={14} /> Cancel anytime</span>
+          </div>
+        </div>
+      </div>
+    </RevealSection>
+  );
+}
+
 /* ── Newsletter ── */
 function NewsletterSection() {
   const [email, setEmail] = React.useState('');
@@ -491,9 +733,13 @@ export default function Landing() {
     <div className="landing-page">
       <NavBar />
       <HeroSection />
-      <FeaturesSection />
+      <RevealSection><FeaturesSection /></RevealSection>
       <HowItWorksSection />
+      <StatsCounterSection />
+      <TestimonialsSection />
+      <TrustedBySection />
       <PricingSection />
+      <CTASection />
       <NewsletterSection />
       <FAQSection />
       <Footer />

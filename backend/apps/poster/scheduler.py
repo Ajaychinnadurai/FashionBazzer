@@ -99,11 +99,13 @@ def scrape_trending_products():
     logger.info("Starting product scraping cycle...")
     from apps.products.scrapers.meesho_scraper import MeeshoScraper
     from apps.products.scrapers.amazon_scraper import AmazonScraper
+    from apps.products.scrapers.flipkart_scraper import FlipkartScraper
     from apps.products.scrapers.image_scraper import update_product_images
 
     results = {
         'meesho': MeeshoScraper().run(),
         'amazon': AmazonScraper().run(),
+        'flipkart': FlipkartScraper().run(),
     }
 
     # After scraping, update product images (scrape product pages for real images)

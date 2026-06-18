@@ -34,7 +34,7 @@ class FlipkartScraper(BaseScraper):
     def __init__(self):
         super().__init__()
         self.base_url = "https://www.flipkart.com"
-        self.affiliate_id = "fashionbazzer"  # Default Flipkart affiliate ID
+        self.affiliate_id = settings.FLIPKART_AFFILIATE_ID
 
     def run(self) -> Dict:
         """
@@ -215,18 +215,18 @@ class FlipkartScraper(BaseScraper):
         # Try __NEXT_DATA__
         match = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, re.DOTALL)
         if match:
-        try:
-            data = json.loads(match.group(1))
-            # Navigate through Next.js data structure
-            props = data.get('props', {}).get('pageProps', {})
-            initial_state = props.get('initialState', {})
-            search_results = initial_state.get('searchResult', {}).get('productList', [])
-            for item in search_results:
-                product_data = self._parse_search_item(item)
-                if product_data:
-                    products.append(product_data)
-        except (json.JSONDecodeError, AttributeError) as e:
-            logger.debug(f"__NEXT_DATA__ parse error: {e}")
+            try:
+                data = json.loads(match.group(1))
+                # Navigate through Next.js data structure
+                props = data.get('props', {}).get('pageProps', {})
+                initial_state = props.get('initialState', {})
+                search_results = initial_state.get('searchResult', {}).get('productList', [])
+                for item in search_results:
+                    product_data = self._parse_search_item(item)
+                    if product_data:
+                        products.append(product_data)
+            except (json.JSONDecodeError, AttributeError) as e:
+                logger.debug(f"__NEXT_DATA__ parse error: {e}")
 
         return products
 
