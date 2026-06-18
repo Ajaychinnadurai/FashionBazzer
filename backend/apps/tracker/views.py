@@ -2,6 +2,7 @@
 Tracker views for analytics API endpoints.
 """
 from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .analytics import AnalyticsEngine
@@ -10,7 +11,8 @@ from apps.products.models import Product
 
 
 class AnalyticsOverviewView(APIView):
-    """GET /api/analytics/overview/ - Dashboard stats summary."""
+    """GET /api/analytics/overview/ - Dashboard stats summary. Requires auth."""
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         stats = AnalyticsEngine.get_dashboard_stats()
@@ -18,7 +20,8 @@ class AnalyticsOverviewView(APIView):
 
 
 class AnalyticsClicksView(APIView):
-    """GET /api/analytics/clicks/ - Click data per platform."""
+    """GET /api/analytics/clicks/ - Click data per platform. Requires auth."""
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         days = int(request.query_params.get('days', 30))
@@ -31,7 +34,8 @@ class AnalyticsClicksView(APIView):
 
 
 class AnalyticsEarningsView(APIView):
-    """GET /api/analytics/earnings/ - Commission breakdown."""
+    """GET /api/analytics/earnings/ - Commission breakdown. Requires auth."""
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         days = int(request.query_params.get('days', 30))
@@ -40,15 +44,27 @@ class AnalyticsEarningsView(APIView):
 
 
 class PlatformStatusView(APIView):
-    """GET /api/analytics/status/ - All platform connection status."""
+    """GET /api/analytics/status/ - All platform connection status. Requires auth."""
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         status_data = AnalyticsEngine.get_platform_status()
         return Response(status_data)
 
 
+class CaptionPerformanceView(APIView):
+    """GET /api/analytics/caption-performance/ - Caption style A/B performance. Requires auth."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        days = int(request.query_params.get('days', 30))
+        data = AnalyticsEngine.get_caption_performance(days)
+        return Response(data)
+
+
 class PlatformTestView(APIView):
-    """POST /api/platforms/test/ - Test a platform connection."""
+    """POST /api/platforms/test/ - Test a platform connection. Requires auth."""
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         platform = request.data.get('platform', '').lower()

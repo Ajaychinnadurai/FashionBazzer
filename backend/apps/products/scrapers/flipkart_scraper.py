@@ -166,6 +166,28 @@ class FlipkartScraper(BaseScraper):
             if isinstance(price, str):
                 price = float(price.replace(',', ''))
 
+            # Extract original/MRP price from Flipkart's offers
+            # Flipkart LD often has: offers.price (sale), offers.highPrice (MRP)
+            # Also check priceSpecification sub-object
+            original_price = price
+            if isinstance(offers, dict):
+                hp = offers.get('highPrice', 0)
+                if hp and float(hp) > price:
+                    original_price = float(hp)
+                spec = offers.get('priceSpecification', {})
+                if isinstance(spec, dict):
+                    for p in ['listPrice', 'originalPrice', 'fullPrice', 'maxPrice']:
+                        v = spec.get(p, 0)
+                        if v and float(v) > price:
+                            original_price = float(v)
+                            break
+                # Check itemOffers nested structure
+                item_offers = offers.get('itemOffered', {}).get('offers', {})
+                if isinstance(item_offers, dict):
+                    hp2 = item_offers.get('highPrice', 0)
+                    if hp2 and float(hp2) > price:
+                        original_price = float(hp2)
+
             # Extract image
             image = item.get('image', '')
             if isinstance(image, list):
@@ -195,7 +217,7 @@ class FlipkartScraper(BaseScraper):
 
             return {
                 'name': name[:300],
-                'original_price': price,
+                'original_price': original_price,
                 'sale_price': price,
                 'rating': rating,
                 'review_count': review_count,
@@ -339,11 +361,20 @@ class FlipkartScraper(BaseScraper):
                     new_query = urlencode(params, doseq=True)
                     affiliate_url = parsed._replace(query=new_query).geturl()
 
+                    # Try to also extract original/MRP from Flipkart HTML
+                    # Check for strike-through price (original price)
+                    orig_price = price
+                    strike_el = container.select_one('[class*="strike"], [class*="Strike"], [class*="mrp"], ._3I9_wc, [class*="original"]')
+                    if strike_el:
+                        sm = re.search(r'₹?\s*([\d,]+)', strike_el.text)
+                        if sm:
+                            orig_price = float(sm.group(1).replace(',', ''))
+
                     products.append({
                         'name': name[:300],
-                        'original_price': price,
+                        'original_price': orig_price if orig_price > price else price,
                         'sale_price': price,
-                        'rating': 4.0,  # Default rating for HTML extraction
+                        'rating': 4.0,
                         'review_count': 0,
                         'category': self._categorize_product(name),
                         'product_url': product_url,
@@ -371,7 +402,8 @@ class FlipkartScraper(BaseScraper):
             price_data = item.get('price', {}) or item.get('pricing', {})
             if isinstance(price_data, dict):
                 sale_price = float(price_data.get('finalPrice', price_data.get('salePrice', price_data.get('price', 0))))
-                original_price = float(price_data.get('originalPrice', price_data.get('mrp', sale_price)))
+                original_price = float(price_data.get('originalPrice', price_data.get('mrp',
+                             price_data.get('strikePrice', price_data.get('listPrice', sale_price)))))
             else:
                 sale_price = float(price_data) if price_data else 0
                 original_price = sale_price
@@ -379,10 +411,10 @@ class FlipkartScraper(BaseScraper):
             # Get rating
             rating = item.get('rating', {})
             if isinstance(rating, dict):
-                rating_value = float(rating.get('rating', rating.get('value', 4.0)))
+                rating_value = float(rating.get('rating', rating.get('value', 0)))
                 review_count = int(rating.get('count', rating.get('reviewCount', 0)))
             else:
-                rating_value = 4.0
+                rating_value = float(rating) if rating else 0
                 review_count = 0
 
             # Get image

@@ -2,6 +2,7 @@ import React from 'react';
 import ClicksChart from '../components/Analytics/ClicksChart';
 import ConversionTable from '../components/Analytics/ConversionTable';
 import EarningsTracker from '../components/Analytics/EarningsTracker';
+import CaptionPerformance from '../components/Analytics/CaptionPerformance';
 import { FiRefreshCw } from 'react-icons/fi';
 import api from '../services/api';
 
@@ -18,16 +19,18 @@ export default function AnalyticsPage() {
   async function fetchData() {
     try {
       setLoading(true);
-      const [overviewRes, clicksRes, earningsRes] = await Promise.all([
+      const [overviewRes, clicksRes, earningsRes, captionRes] = await Promise.all([
         api.get('/analytics/overview/'),
         api.get(`/analytics/clicks/?days=${timeRange}`),
         api.get(`/analytics/earnings/?days=${timeRange}`),
+        api.get(`/analytics/caption-performance/?days=${timeRange}`),
       ]);
 
       setData({
         stats: overviewRes.data,
         clicks: clicksRes.data,
         earnings: earningsRes.data,
+        captionPerformance: captionRes.data,
       });
     } catch (err) {
       console.error('Analytics fetch error:', err);
@@ -35,6 +38,7 @@ export default function AnalyticsPage() {
         stats: null,
         clicks: null,
         earnings: null,
+        captionPerformance: null,
       });
     } finally {
       setLoading(false);
@@ -121,6 +125,11 @@ export default function AnalyticsPage() {
 
       <div style={{ padding: '20px 24px 0' }}>
         <ConversionTable data={data?.clicks?.top_products || []} />
+      </div>
+
+      {/* Caption A/B Performance */}
+      <div style={{ padding: '20px 24px' }}>
+        <CaptionPerformance data={data?.captionPerformance || []} />
       </div>
     </div>
   );

@@ -15,4 +15,6 @@ lxml==5.1.0
 whitenoise==6.6.0
 celery==5.3.6
 redis==5.0.1
+sendgrid==6.12.5
+twilio==9.10.9
 pytz==2025.2

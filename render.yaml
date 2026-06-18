@@ -58,11 +58,31 @@ services:
         sync: false
       - key: HUGGINGFACE_API_KEY
         sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_NUMBER
+        sync: false
+      - key: WHATSAPP_TO_NUMBER
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: REPORT_FROM_EMAIL
+        sync: false
+      - key: REPORT_EMAIL
+        sync: false
       - key: AMAZON_ASSOCIATE_ID
         sync: false
       - key: MEESHO_AFFILIATE_ID
         sync: false
       - key: FLIPKART_AFFILIATE_ID
+        sync: false
+      - key: MYNTRA_AFFILIATE_ID
+        sync: false
+      - key: AJIO_AFFILIATE_ID
+        sync: false
+      - key: EARNKARO_USER_ID
         sync: false
       - key: CUELINKS_ID
         sync: false
@@ -141,6 +161,8 @@ services:
       - key: AMAZON_ASSOCIATE_ID
         sync: false
       - key: MEESHO_AFFILIATE_ID
+        sync: false
+      - key: EARNKARO_USER_ID
         sync: false
       - key: CUELINKS_ID
         sync: false

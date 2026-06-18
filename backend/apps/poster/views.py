@@ -2,6 +2,7 @@
 Views for managing post queue and content generation.
 """
 from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import PostQueue
@@ -10,13 +11,15 @@ from apps.content.ai_generator import ContentGenerator
 
 
 class PostQueueListView(generics.ListAPIView):
-    """List all queued posts."""
+    """List all queued posts. Requires authentication."""
+    permission_classes = [IsAuthenticated]
     queryset = PostQueue.objects.all()
     serializer_class = PostQueueSerializer
 
 
 class GenerateContentAPIView(APIView):
-    """Manually trigger content generation for pending products."""
+    """Manually trigger content generation. Requires authentication."""
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = PostQueueCreateSerializer(data=request.data)
@@ -32,7 +35,8 @@ class GenerateContentAPIView(APIView):
 
 
 class PublishNowAPIView(APIView):
-    """Force publish a queued post immediately."""
+    """Force publish a queued post immediately. Requires authentication."""
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         post_id = request.data.get('post_id')

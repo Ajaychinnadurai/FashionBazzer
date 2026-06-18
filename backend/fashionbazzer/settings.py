@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third party
     'rest_framework',
+    'rest_framework_simplejwt',
     'corsheaders',
     'django_apscheduler',
     # Local apps
@@ -180,8 +181,12 @@ CORS_ALLOWED_ORIGINS = _parse_list(config(
 
 # REST Framework
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
@@ -189,6 +194,14 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+}
+
+# SimpleJWT (token lifetime: 24h access, 7d refresh)
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=24),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
 }
 
 # APScheduler Configuration
@@ -203,6 +216,14 @@ SCHEDULER_AUTOSTART = True
 AMAZON_ASSOCIATE_ID = config('AMAZON_ASSOCIATE_ID', default='')
 MEESHO_AFFILIATE_ID = config('MEESHO_AFFILIATE_ID', default='')
 FLIPKART_AFFILIATE_ID = config('FLIPKART_AFFILIATE_ID', default='fashionbazzer')
+MYNTRA_AFFILIATE_ID = config('MYNTRA_AFFILIATE_ID', default='fashionbazzer')
+AJIO_AFFILIATE_ID = config('AJIO_AFFILIATE_ID', default='fashionbazzer')
+EARNKARO_USER_ID = config('EARNKARO_USER_ID', default='')
+
+# SendGrid
+SENDGRID_API_KEY = config('SENDGRID_API_KEY', default='')
+REPORT_EMAIL = config('REPORT_EMAIL', default='')
+REPORT_FROM_EMAIL = config('REPORT_FROM_EMAIL', default='')  # Must be a verified sender in SendGrid
 
 # Telegram
 TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN', default='')
@@ -225,6 +246,12 @@ TWITTER_API_KEY = config('TWITTER_API_KEY', default='')
 TWITTER_API_SECRET = config('TWITTER_API_SECRET', default='')
 TWITTER_ACCESS_TOKEN = config('TWITTER_ACCESS_TOKEN', default='')
 TWITTER_ACCESS_SECRET = config('TWITTER_ACCESS_SECRET', default='')
+
+# Twilio (WhatsApp)
+TWILIO_ACCOUNT_SID = config('TWILIO_ACCOUNT_SID', default='')
+TWILIO_AUTH_TOKEN = config('TWILIO_AUTH_TOKEN', default='')
+TWILIO_WHATSAPP_NUMBER = config('TWILIO_WHATSAPP_NUMBER', default='')
+WHATSAPP_TO_NUMBER = config('WHATSAPP_TO_NUMBER', default='')
 
 # AI
 HUGGINGFACE_API_KEY = config('HUGGINGFACE_API_KEY', default='')

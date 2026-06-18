@@ -3,7 +3,12 @@ Dashboard views for the React frontend.
 Aggregates data from all apps into a single dashboard API.
 """
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+from django.db.models import Count, Avg, Sum, Q, Max, F
+from django.utils import timezone
+from datetime import timedelta
+
 from apps.tracker.analytics import AnalyticsEngine
 from apps.tracker.models import TrackedLink, Click, Commission, PlatformConnection
 from apps.products.models import Product
@@ -13,10 +18,11 @@ from apps.poster.models import PostQueue
 class SeedDataView(APIView):
     """
     GET /api/dashboard/seed/
-    Triggers real product scraping and content generation in the background.
+    Admin-only. Triggers real product scraping and content generation in the background.
     Does NOT create any dummy/sample products — only real scraped data.
     Returns immediately while scraping runs asynchronously.
     """
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get(self, request):
         import logging
@@ -63,11 +69,95 @@ class SeedDataView(APIView):
         return Response(results)
 
 
+class DataQualityView(APIView):
+    """
+    GET /api/dashboard/data-quality/
+    Admin-only. Returns product data quality metrics for monitoring stale prices,
+    missing ratings, and overall data health.
+    """
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get(self, request):
+        total = Product.objects.count()
+        stale_count = Product.objects.filter(is_price_stale=True).count()
+        missing_rating_count = Product.objects.filter(Q(rating=0) | (Q(review_count=0) & Q(rating__lte=4.0))).count()
+        has_content = Product.objects.filter(ai_tagline__gt='').count()
+
+        # Average discount (only among products with real MRP)
+        with_discount = Product.objects.filter(
+            sale_price__gt=0,
+            original_price__gt=0,
+        ).filter(original_price__gt=F('sale_price'))
+        avg_discount = with_discount.aggregate(
+            avg=Avg(
+                (F('original_price') - F('sale_price'))
+                / F('original_price') * 100
+            )
+        )['avg'] or 0
+
+        # Platform distribution
+        platform_dist = list(
+            Product.objects.values('platform')
+            .annotate(count=Count('id'), stale=Count('id', filter=Q(is_price_stale=True)))
+            .order_by('-count')
+        )
+
+        # Category distribution
+        cat_dist = list(
+            Product.objects.values('category')
+            .annotate(count=Count('id'))
+            .order_by('-count')
+        )
+
+        # Worst offenders: top 10 products with stale prices
+        worst_stale = list(
+            Product.objects.filter(is_price_stale=True)
+            .values('id', 'name', 'platform', 'sale_price', 'original_price', 'rating', 'review_count', 'last_scraped')
+            .order_by('?')[:10]
+        )
+
+        # Products with missing ratings
+        worst_ratings = list(
+            Product.objects.filter(Q(rating=0) | (Q(review_count=0) & Q(rating__lte=4.0)))
+            .values('id', 'name', 'platform', 'sale_price', 'rating', 'review_count', 'last_scraped')
+            .order_by('?')[:10]
+        )
+
+        # Fresh products (updated within last 24h)
+        fresh_cutoff = timezone.now() - timedelta(hours=24)
+        fresh_count = Product.objects.filter(last_price_updated__gte=fresh_cutoff).count()
+
+        # Last refresh time from any product
+        last_refresh = Product.objects.aggregate(last=Max('last_price_updated'))['last']
+
+        # Products with content vs without
+        content_ratio = round((has_content / total * 100), 1) if total > 0 else 0
+
+        return Response({
+            'total_products': total,
+            'stale_count': stale_count,
+            'stale_percent': round((stale_count / total * 100), 1) if total > 0 else 0,
+            'missing_rating_count': missing_rating_count,
+            'missing_rating_percent': round((missing_rating_count / total * 100), 1) if total > 0 else 0,
+            'has_content': has_content,
+            'content_ratio': content_ratio,
+            'fresh_count': fresh_count,
+            'avg_discount': round(avg_discount, 1),
+            'last_refresh': last_refresh,
+            'platform_distribution': platform_dist,
+            'category_distribution': cat_dist,
+            'worst_stale_products': worst_stale,
+            'worst_rating_products': worst_ratings,
+        })
+
+
 class DashboardView(APIView):
     """
     GET /api/dashboard/
     Returns all dashboard data in a single request.
+    Requires authentication.
     """
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         # Get date filters

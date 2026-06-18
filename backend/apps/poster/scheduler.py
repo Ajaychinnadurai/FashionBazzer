@@ -100,12 +100,18 @@ def scrape_trending_products():
     from apps.products.scrapers.meesho_scraper import MeeshoScraper
     from apps.products.scrapers.amazon_scraper import AmazonScraper
     from apps.products.scrapers.flipkart_scraper import FlipkartScraper
+    from apps.products.scrapers.myntra_scraper import MyntraScraper
+    from apps.products.scrapers.ajio_scraper import AjioScraper
+    from apps.products.scrapers.earnkaro_scraper import EarnKaroScraper
     from apps.products.scrapers.image_scraper import update_product_images
 
     results = {
         'meesho': MeeshoScraper().run(),
         'amazon': AmazonScraper().run(),
         'flipkart': FlipkartScraper().run(),
+        'myntra': MyntraScraper().run(),
+        'ajio': AjioScraper().run(),
+        'earnkaro': EarnKaroScraper().run(),
     }
 
     # After scraping, update product images (scrape product pages for real images)
@@ -122,7 +128,33 @@ def scrape_trending_products():
 
 
 # ──────────────────────────────────────────
-# JOB 2: Generate AI content (every 2h)
+# JOB 2: Check Festival/Sale Event Boost (daily at 6AM)
+# ──────────────────────────────────────────
+def check_event_boost():
+    """Check for active shopping events and log boost status.
+    During peak events like Diwali/BBD/Prime Day, this automatically
+    increases posting frequency and scraping intensity.
+    """
+    from apps.content.festival_booster import get_booster
+    booster = get_booster()
+    info = booster.get_boost_info()
+    log_line = booster.get_event_log_line()
+
+    if info['has_active_boost']:
+        logger.info(
+            f"🚀 EVENT BOOST ACTIVE: {info['multiplier']}x multiplier | "
+            f"Events: {', '.join(info['events'])} | "
+            f"Theme: {info['theme']} | "
+            f"Keywords: {info['extra_keywords'][:5]}"
+        )
+    else:
+        logger.info(f"{log_line}")
+
+    return info
+
+
+# ──────────────────────────────────────────
+# JOB 3: Generate AI content (every 2h)
 # ──────────────────────────────────────────
 def generate_content():
     """Generate AI captions and compose images for new products.
@@ -139,8 +171,11 @@ def generate_content():
     # If few posts were generated, recycle existing products to refill pipeline
     if result.get('generated', 0) < 5:
         from apps.poster.models import PostQueue
+        from apps.content.festival_booster import get_booster
+        booster = get_booster()
+        threshold = booster.get_boosted_queue_threshold()
         pending_count = PostQueue.objects.filter(status='pending').count()
-        if pending_count < 15:
+        if pending_count < threshold:
             logger.info(f"Low pending queue ({pending_count}), recycling content...")
             recycle_result = generator.generate_batch(limit=8, recycle=True)
             result['recycled'] = recycle_result.get('generated', 0)
@@ -151,7 +186,7 @@ def generate_content():
 
 
 # ──────────────────────────────────────────
-# JOB 3: Post to Telegram (9x/day — peak hours)
+# JOB 4: Post to Telegram (9x/day — peak hours, boosted during events)
 # ──────────────────────────────────────────
 def publish_to_telegram():
     """Post pending content to Telegram channel.
@@ -161,7 +196,12 @@ def publish_to_telegram():
     logger.info("Publishing to Telegram...")
     from .platforms.telegram_poster import TelegramPoster
 
-    posts = get_pending_posts_for_platform('telegram', limit=5)
+    from apps.content.festival_booster import get_booster
+    booster = get_booster()
+    base_limit = 5
+    limit = booster.get_boosted_post_limit(base_limit)
+
+    posts = get_pending_posts_for_platform('telegram', limit=limit)
     poster = TelegramPoster()
 
     published = 0
@@ -171,30 +211,34 @@ def publish_to_telegram():
             published += 1
             update_post_status(post)
 
-    logger.info(f"Published {published}/{len(posts)} posts to Telegram")
+    logger.info(f"Published {published}/{len(posts)} posts to Telegram (boost limit: {limit})")
 
     # Auto-top-up: if queue is running low, trigger content generation
     from .models import PostQueue
+    threshold = booster.get_boosted_queue_threshold()
     remaining = PostQueue.objects.filter(status='pending').count()
-    if remaining < 10:
-        logger.info(f"Low pending queue ({remaining}), auto-triggering content generation...")
+    if remaining < threshold:
+        logger.info(f"Low pending queue ({remaining} < {threshold}), auto-triggering content generation...")
         from apps.content.ai_generator import ContentGenerator
         try:
             generator = ContentGenerator()
-            gen_result = generator.generate_batch(limit=10, recycle=True)
+            batch_size = booster.get_boosted_post_limit(10)
+            gen_result = generator.generate_batch(limit=batch_size, recycle=True)
             logger.info(f"Auto-generated {gen_result.get('generated', 0)} more posts")
         except Exception as e:
             logger.error(f"Auto content generation failed: {e}")
 
 
 # ──────────────────────────────────────────
-# JOB 4: Post to Instagram (3x/day)
+# JOB 5: Post to Instagram (3x/day, boosted during events)
 # ──────────────────────────────────────────
 def publish_to_instagram():
     """Post pending content to Instagram."""
     from .platforms.instagram_poster import InstagramPoster
+    from apps.content.festival_booster import get_booster
 
-    posts = get_pending_posts_for_platform('instagram', limit=3)
+    limit = get_booster().get_boosted_post_limit(3)
+    posts = get_pending_posts_for_platform('instagram', limit=limit)
     poster = InstagramPoster()
     for post in posts:
         success = poster.send(post)
@@ -203,13 +247,15 @@ def publish_to_instagram():
 
 
 # ──────────────────────────────────────────
-# JOB 5: Post to Facebook (3x/day)
+# JOB 6: Post to Facebook (3x/day, boosted during events)
 # ──────────────────────────────────────────
 def publish_to_facebook():
     """Post pending content to Facebook Page."""
     from .platforms.facebook_poster import FacebookPoster
+    from apps.content.festival_booster import get_booster
 
-    posts = get_pending_posts_for_platform('facebook', limit=3)
+    limit = get_booster().get_boosted_post_limit(3)
+    posts = get_pending_posts_for_platform('facebook', limit=limit)
     poster = FacebookPoster()
     for post in posts:
         success = poster.send(post)
@@ -218,13 +264,15 @@ def publish_to_facebook():
 
 
 # ──────────────────────────────────────────
-# JOB 6: Post to Pinterest (4x/day)
+# JOB 7: Post to Pinterest (4x/day, boosted during events)
 # ──────────────────────────────────────────
 def publish_to_pinterest():
     """Create Pinterest pins from pending content."""
     from .platforms.pinterest_poster import PinterestPoster
+    from apps.content.festival_booster import get_booster
 
-    posts = get_pending_posts_for_platform('pinterest', limit=4)
+    limit = get_booster().get_boosted_post_limit(4)
+    posts = get_pending_posts_for_platform('pinterest', limit=limit)
     poster = PinterestPoster()
     for post in posts:
         success = poster.send(post)
@@ -233,13 +281,15 @@ def publish_to_pinterest():
 
 
 # ──────────────────────────────────────────
-# JOB 7: Post to Twitter/X (3x/day)
+# JOB 8: Post to Twitter/X (3x/day, boosted during events)
 # ──────────────────────────────────────────
 def publish_to_twitter():
     """Post tweets with product images."""
     from .platforms.twitter_poster import TwitterPoster
+    from apps.content.festival_booster import get_booster
 
-    posts = get_pending_posts_for_platform('twitter', limit=3)
+    limit = get_booster().get_boosted_post_limit(3)
+    posts = get_pending_posts_for_platform('twitter', limit=limit)
     poster = TwitterPoster()
     for post in posts:
         success = poster.send(post)
@@ -248,13 +298,15 @@ def publish_to_twitter():
 
 
 # ──────────────────────────────────────────
-# JOB 8: Post to Threads (2x/day)
+# JOB 9: Post to Threads (2x/day, boosted during events)
 # ──────────────────────────────────────────
 def publish_to_threads():
     """Post content to Threads."""
     from .platforms.threads_poster import ThreadsPoster
+    from apps.content.festival_booster import get_booster
 
-    posts = get_pending_posts_for_platform('threads', limit=2)
+    limit = get_booster().get_boosted_post_limit(2)
+    posts = get_pending_posts_for_platform('threads', limit=limit)
     poster = ThreadsPoster()
     for post in posts:
         success = poster.send(post)
@@ -263,29 +315,34 @@ def publish_to_threads():
 
 
 # ──────────────────────────────────────────
-# JOB 9: Content Recycle (6x/day)
+# JOB 10: Content Recycle (6x/day, boosted during events)
 # ──────────────────────────────────────────
 def recycle_content():
     """
     Recycle content for products that have already been posted.
     This ensures the pipeline never runs dry.
+    During events, threshold increases to keep more posts ready.
     """
     logger.info("Starting content recycle cycle...")
     from apps.content.ai_generator import ContentGenerator
+    from apps.content.festival_booster import get_booster
     from .models import PostQueue
 
+    booster = get_booster()
+    threshold = booster.get_boosted_queue_threshold()
     pending_count = PostQueue.objects.filter(status='pending').count()
-    if pending_count >= 20:
-        logger.info(f"Pending queue healthy ({pending_count}), skipping recycle")
+    if pending_count >= threshold:
+        logger.info(f"Pending queue healthy ({pending_count} >= {threshold}), skipping recycle")
         return
 
+    batch_size = booster.get_boosted_post_limit(12)
     generator = ContentGenerator()
-    result = generator.generate_batch(limit=12, recycle=True)
+    result = generator.generate_batch(limit=batch_size, recycle=True)
     logger.info(f"Content recycle complete: {result}")
 
 
 # ──────────────────────────────────────────
-# JOB 10: Sync affiliate commissions (daily)
+# JOB 11: Sync affiliate commissions (daily)
 # ──────────────────────────────────────────
 def sync_commissions():
     """Sync commission data from all affiliate platforms."""
@@ -298,8 +355,50 @@ def sync_commissions():
 
 
 # ──────────────────────────────────────────
-# JOB 11: Update platform status (every 30min)
+# JOB 12: Send daily email report (8AM IST)
 # ──────────────────────────────────────────
+def send_daily_report():
+    """Send the daily analytics email report via SendGrid (at 8AM IST)."""
+    logger.info("Sending daily email report...")
+    from apps.marketing.email_reports import send_daily_report as _send_report
+    result = _send_report()
+    logger.info(f"Daily report result: {result}")
+    return result
+
+
+def send_whatsapp_digest():
+    """Send the daily WhatsApp digest (at 9AM IST)."""
+    logger.info("Sending WhatsApp daily digest...")
+    from apps.marketing.whatsapp_notifier import send_daily_digest
+    result = send_daily_digest()
+    logger.info(f"WhatsApp digest result: {result}")
+    return result
+
+
+# ──────────────────────────────────────────
+# JOB 13: Refresh stale product prices (weekly, Sunday 4AM IST)
+# ──────────────────────────────────────────
+def refresh_stale_prices():
+    """
+    Refresh price data for products with stale/missing price info.
+
+    Visits product pages of:
+    - Products flagged is_price_stale=True (no MRP found initially)
+    - Products whose last_price_updated is older than 7 days
+
+    Extracts JSON-LD structured data from product pages to find
+    real MRP/original prices, updating records when found.
+    Also refreshes product images in the same pass.
+    """
+    logger.info("Starting stale price refresh cycle...")
+    from apps.products.scrapers.image_scraper import batch_refresh_stale_prices
+
+    result = batch_refresh_stale_prices(batch_size=30)
+
+    logger.info(f"Stale price refresh complete: {result}")
+    return result
+
+
 def check_platform_connections():
     """Check and update connection status for all platforms."""
     from apps.tracker.models import PlatformConnection
@@ -320,10 +419,27 @@ def check_platform_connections():
             poster_class = getattr(module, class_name)
             result = poster_class().test_connection()
 
+            was_connected = False
+            try:
+                existing = PlatformConnection.objects.get(platform=platform_name)
+                was_connected = existing.is_connected
+            except PlatformConnection.DoesNotExist:
+                pass
+
             conn, _ = PlatformConnection.objects.get_or_create(platform=platform_name)
             conn.is_connected = result.get('connected', False)
             conn.error_message = result.get('error', '')
             conn.save()
+
+            # Alert on new disconnection (platform was connected but now is not)
+            if was_connected and not result.get('connected', False):
+                error_msg = result.get('error', 'Unknown error')
+                logger.warning(f"Platform {platform_name} went down! Sending alert...")
+                from apps.marketing.whatsapp_notifier import send_platform_alert
+                try:
+                    send_platform_alert(platform_name, error_msg)
+                except Exception as alert_e:
+                    logger.error(f"Failed to send platform alert: {alert_e}")
         except Exception as e:
             logger.error(f"Connection check failed for {platform_name}: {e}")
 
@@ -334,6 +450,11 @@ SCHEDULER_JOBS = [
         'fn': scrape_trending_products,
         'trigger': CronTrigger(hour="3,9,15,21", minute=0, timezone=IST),
         'id': 'scrape_products',
+    },
+    {
+        'fn': check_event_boost,
+        'trigger': CronTrigger(hour=6, minute=0, timezone=IST),
+        'id': 'check_event_boost',
     },
     {
         'fn': generate_content,
@@ -385,6 +506,22 @@ SCHEDULER_JOBS = [
         'trigger': CronTrigger(minute="*/30"),
         'id': 'check_connections',
     },
+    {
+        'fn': send_daily_report,
+        'trigger': CronTrigger(hour=8, minute=0, timezone=IST),
+        'id': 'send_daily_report',
+    },
+    {
+        'fn': send_whatsapp_digest,
+        'trigger': CronTrigger(hour=9, minute=0, timezone=IST),
+        'id': 'send_whatsapp_digest',
+    },
+    {
+        'fn': refresh_stale_prices,
+        # Weekly on Sunday at 4:00 AM IST
+        'trigger': CronTrigger(day_of_week='sun', hour=4, minute=0, timezone=IST),
+        'id': 'refresh_stale_prices',
+    },
 ]
 
 
@@ -401,6 +538,15 @@ def start_scheduler():
             replace_existing=True,
             misfire_grace_time=300,
         )
+
+    # Log any active event boost
+    try:
+        from apps.content.festival_booster import get_booster
+        boost_info = get_booster().get_boost_info()
+        if boost_info['has_active_boost']:
+            logger.info(f"🎉 Event boost active on startup: {boost_info['multiplier']}x | {' '.join(boost_info['events'])}")
+    except Exception:
+        pass
 
     # Register connection cleanup event listener
     from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR

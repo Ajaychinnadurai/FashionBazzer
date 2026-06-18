@@ -5,6 +5,7 @@ import logging
 
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import Product
 from .serializers import ProductListSerializer, ProductDetailSerializer
@@ -15,8 +16,10 @@ logger = logging.getLogger(__name__)
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint for products.
-    Read-only. All products are from real e-commerce scrapes only — no sample/dummy data.
+    Read-only. Requires authentication.
+    All products are from real e-commerce scrapes only — no sample/dummy data.
     """
+    permission_classes = [IsAuthenticated]
     queryset = Product.objects.all()
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'category', 'platform']

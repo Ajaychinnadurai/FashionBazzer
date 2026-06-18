@@ -1,9 +1,9 @@
 import React from 'react';
-import { FiClock, FiCheckCircle, FiXCircle, FiPlay } from 'react-icons/fi';
+import { FiClock, FiCheckCircle, FiXCircle, FiPlay, FiEye } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
-export default function PostQueue() {
+export default function PostQueue({ onPreview }) {
   const [queue, setQueue] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
 
@@ -115,6 +115,15 @@ export default function PostQueue() {
                     onClick={() => handlePublishNow(post.id)}
                   >
                     <FiPlay size={12} /> Publish Now
+                  </button>
+                )}
+                {onPreview && (
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => onPreview(post)}
+                    title="Preview post on all platforms"
+                  >
+                    <FiEye size={12} /> Preview
                   </button>
                 )}
               </div>

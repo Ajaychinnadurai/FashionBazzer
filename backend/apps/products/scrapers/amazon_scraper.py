@@ -203,9 +203,32 @@ class AmazonScraper(BaseScraper):
             # Build affiliate URL with tag
             affiliate_url = self._add_affiliate_tag(url)
 
+            # Extract original/MRP price from various Amazon price fields
+            # Amazon LD often has: offers.price (sale), offers.highPrice (MRP)
+            # Also check priceSpecification for list price vs sale price
+            original_price = price
+            if isinstance(offers, dict):
+                # Check for highPrice (search results list BOTH prices)
+                hp = offers.get('highPrice', offers.get('listPrice', offers.get('wasPrice', 0)))
+                if isinstance(hp, (int, float)) and float(hp) > price:
+                    original_price = float(hp)
+                # Check for priceSpecification sub-object
+                spec = offers.get('priceSpecification', {})
+                if isinstance(spec, dict):
+                    for p in ['listPrice', 'originalPrice', 'fullPrice']:
+                        v = spec.get(p, 0)
+                        if v and float(v) > price:
+                            original_price = float(v)
+                            break
+                # Amazon often has minPrice/maxPrice in search results
+                min_p = offers.get('minPrice', 0)
+                max_p = offers.get('maxPrice', 0)
+                if min_p and max_p and float(max_p) > float(min_p):
+                    original_price = float(max_p)
+
             return {
                 'name': name[:300],
-                'original_price': price,
+                'original_price': original_price,
                 'sale_price': price,
                 'rating': rating,
                 'review_count': review_count,
@@ -272,18 +295,36 @@ class AmazonScraper(BaseScraper):
             if not name or len(name) < 10:
                 return None
 
-            # Price
-            price_el = (
-                card_element.select_one('.a-price-whole')
-                or card_element.select_one('[class*="price"]')
-                or card_element.select_one('.a-offscreen')
-            )
-            price = 0
-            if price_el:
-                price_text = price_el.text.strip()
-                price_match = re.search(r'(\d[\d,]*)', price_text.replace(',', ''))
-                if price_match:
-                    price = float(price_match.group(1).replace(',', ''))
+            # Price — extract both sale price AND original/MRP
+            sale_price = 0
+            original_price = 0
+
+            # Try whole-price + fraction first (.a-price-whole + .a-price-fraction)
+            whole_el = card_element.select_one('.a-price-whole')
+            fraction_el = card_element.select_one('.a-price-fraction') if whole_el else None
+            if whole_el:
+                whole = whole_el.text.strip().replace(',', '')
+                fraction = fraction_el.text.strip() if fraction_el else '00'
+                sale_price = float(f'{whole}.{fraction}')
+
+            # Fallback to .a-offscreen or general price selectors
+            if not sale_price:
+                for sel in ['[class*="price"]', '.a-offscreen']:
+                    price_el = card_element.select_one(sel)
+                    if price_el:
+                        price_text = price_el.text.strip()
+                        pm = re.search(r'(\d[\d,]*)', price_text.replace(',', ''))
+                        if pm:
+                            sale_price = float(pm.group(1).replace(',', ''))
+                            break
+
+            # Extract original/MRP price (strike-through or 'was' price)
+            # Amazon shows:  ₹1,299 <strike>₹2,499</strike>
+            strike_el = card_element.select_one('.a-text-price span.a-offscreen')
+            if strike_el:
+                pm = re.search(r'(\d[\d,]*)', strike_el.text.replace(',', ''))
+                if pm:
+                    original_price = float(pm.group(1).replace(',', ''))
 
             # Image
             img_el = card_element.select_one('img.s-image')
@@ -315,15 +356,15 @@ class AmazonScraper(BaseScraper):
                 href = link_el['href']
                 url = href if href.startswith('http') else f"{self.base_url}{href}"
 
-            if not url or not price:
+            if not url or not sale_price:
                 return None
 
             affiliate_url = self._add_affiliate_tag(url)
 
             return {
                 'name': name[:300],
-                'original_price': price,
-                'sale_price': price,
+                'original_price': original_price or sale_price,
+                'sale_price': sale_price,
                 'rating': rating,
                 'review_count': review_count,
                 'category': self._categorize(name),

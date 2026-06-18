@@ -138,7 +138,10 @@ class ContentGenerator:
             )
 
         # Step 3: Generate captions for each platform
-        season = random.choice(SEASONS)
+        # Use event-themed season if a festival/sale is active,
+        # otherwise falls back to month-based season automatically
+        from .festival_booster import get_booster
+        season = get_booster().get_caption_themed_season()
         context = {
             'product_name': product.name[:50],
             'price': int(product.sale_price),

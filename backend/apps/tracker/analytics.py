@@ -160,6 +160,68 @@ class AnalyticsEngine:
         ]
 
 
+    @staticmethod
+    def get_caption_performance(days: int = 30) -> List[Dict]:
+        """
+        Get performance metrics grouped by caption style and platform.
+        Shows which caption styles drive the most clicks per platform.
+        """
+        since = timezone.now() - timedelta(days=days)
+
+        # Join PostQueue -> Product -> TrackedLink to get clicks per caption_style per platform
+        from django.db.models import Sum, Count
+
+        # Get all published posts with their caption styles
+        posts = PostQueue.objects.filter(
+            status='published',
+            created_at__gte=since,
+        ).exclude(caption_style='').values('caption_style').annotate(
+            total_posts=Count('id'),
+        ).order_by('-total_posts')
+
+        # Get clicks per caption style by joining through Product -> TrackedLink
+        caption_clicks = {}
+        for post in posts:
+            style = post['caption_style']
+            # Find all TrackedLinks for products that had posts with this style
+            product_ids = PostQueue.objects.filter(
+                caption_style=style,
+                status='published',
+                created_at__gte=since,
+            ).values_list('product_id', flat=True).distinct()
+
+            links = TrackedLink.objects.filter(
+                product_id__in=list(product_ids),
+                created_at__gte=since,
+            ).values('platform').annotate(
+                total_clicks=Sum('click_count'),
+                total_links=Count('id'),
+            )
+
+            # Aggregate clicks per platform for this style
+            total_clicks = 0
+            platform_breakdown = {}
+            for link in links:
+                platform = link['platform']
+                clicks = link['total_clicks'] or 0
+                total_clicks += clicks
+                platform_breakdown[platform] = clicks
+
+            if total_clicks > 0 or post['total_posts'] > 0:
+                caption_clicks[style] = {
+                    'caption_style': style,
+                    'total_posts': post['total_posts'],
+                    'total_clicks': total_clicks,
+                    'clicks_per_post': round(total_clicks / post['total_posts'], 1) if post['total_posts'] > 0 else 0,
+                    'platforms': platform_breakdown,
+                }
+
+        # Sort by total clicks descending
+        result = sorted(caption_clicks.values(), key=lambda x: x['total_clicks'], reverse=True)
+
+        return result
+
+
 class CommissionSync:
     """Sync commission data from affiliate platforms."""
 

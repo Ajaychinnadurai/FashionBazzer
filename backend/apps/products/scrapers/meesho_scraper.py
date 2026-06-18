@@ -237,12 +237,12 @@ class MeeshoScraper(BaseScraper):
             if isinstance(image, dict):
                 image = image.get('url', '') or image.get('src', '')
 
-            # Rating
-            rating = 4.0
+            # Rating — default to 0 when missing (more honest than 4.0)
+            rating = 0.0
             review_count = 0
             rating_data = item.get('rating', item.get('ratings', {}))
             if isinstance(rating_data, dict):
-                rating = float(rating_data.get('rating', rating_data.get('average', rating)))
+                rating = float(rating_data.get('rating', rating_data.get('average', 0)))
                 review_count = int(rating_data.get('count', rating_data.get('total', 0)))
             elif isinstance(rating_data, (int, float)):
                 rating = float(rating_data)
@@ -314,7 +314,7 @@ class MeeshoScraper(BaseScraper):
                 'name': name[:300],
                 'original_price': price,
                 'sale_price': price,
-                'rating': 4.0,
+                'rating': 0.0,
                 'review_count': 0,
                 'category': self._categorize(name),
                 'product_url': url,

@@ -1,16 +1,19 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { FiHome, FiGrid, FiSend, FiBarChart2, FiSettings } from 'react-icons/fi';
-
-const NAV_ITEMS = [
-  { path: '/dashboard', icon: FiHome, label: 'Overview' },
-  { path: '/products', icon: FiGrid, label: 'Products' },
-  { path: '/posts', icon: FiSend, label: 'Posts & Queue' },
-  { path: '/analytics', icon: FiBarChart2, label: 'Analytics' },
-  { path: '/settings', icon: FiSettings, label: 'Settings' },
-];
+import { FiHome, FiGrid, FiSend, FiBarChart2, FiSettings, FiShield, FiLogOut } from 'react-icons/fi';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Sidebar({ isOpen, onToggle }) {
+  const { user, isAdmin, logout } = useAuth();
+
+  const NAV_ITEMS = [
+    { path: '/dashboard', icon: FiHome, label: 'Overview' },
+    { path: '/products', icon: FiGrid, label: 'Products' },
+    ...(isAdmin ? [{ path: '/data-quality', icon: FiShield, label: 'Data Quality' }] : []),
+    { path: '/posts', icon: FiSend, label: 'Posts & Queue' },
+    { path: '/analytics', icon: FiBarChart2, label: 'Analytics' },
+    { path: '/settings', icon: FiSettings, label: 'Settings' },
+  ];
   return (
     <aside style={{
       position: 'fixed',
@@ -94,21 +97,50 @@ export default function Sidebar({ isOpen, onToggle }) {
         })}
       </nav>
 
-      {/* Footer */}
+      {/* Footer — User info + Logout */}
       <div style={{
         padding: '16px 20px',
         borderTop: '1px solid var(--border)',
       }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          fontSize: '0.75rem',
-          color: 'var(--text-muted)',
-        }}>
-          <span>19 posts/day</span>
-          <span>Zero human work</span>
-        </div>
+        {user && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: 'var(--gradient)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
+              }}>
+                {user.username?.charAt(0).toUpperCase()}
+              </div>
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user.username}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: isAdmin ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {isAdmin ? 'Administrator' : 'User'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        <button
+          onClick={logout}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            width: '100%', padding: '10px 14px',
+            borderRadius: 'var(--radius-sm)',
+            background: 'rgba(255, 71, 87, 0.08)',
+            border: '1px solid rgba(255, 71, 87, 0.15)',
+            color: '#FF4757', fontSize: '0.8rem', fontWeight: 500,
+            cursor: 'pointer', transition: 'var(--transition)',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 71, 87, 0.15)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 71, 87, 0.08)'}
+        >
+          <FiLogOut size={14} />
+          Sign Out
+        </button>
       </div>
     </aside>
   );

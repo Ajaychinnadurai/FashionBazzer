@@ -7,10 +7,13 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 
 class RootStatusView(APIView):
     """Health endpoint for Render probes: GET / -> 200."""
+    permission_classes = [AllowAny]
 
     def get(self, request):
         return Response({"status": "ok"})
@@ -19,6 +22,10 @@ class RootStatusView(APIView):
 urlpatterns = [
     path('', RootStatusView.as_view(), name='root-status'),
     path('admin/', admin.site.urls),
+    # Auth endpoints (public)
+    path('api/auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/auth/', include('apps.dashboard.auth_urls')),
     # API endpoints
     path('api/products/', include('apps.products.urls')),
     path('api/queue/', include('apps.poster.urls')),
